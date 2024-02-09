@@ -3,6 +3,7 @@ use crate::application::geometry::{Line2, Pol2, Rec2, Vec2};
 use crate::application::render::color::color;
 use crate::application::render::{Renderer, RendererProperties as ApplicationProperties};
 
+mod asset;
 pub mod events;
 pub mod geometry;
 pub mod render;
