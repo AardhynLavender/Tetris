@@ -1,44 +1,17 @@
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use std::time::Duration;
+use crate::application::geometry::Vec2;
+use crate::application::render::RendererProperties;
+use crate::application::Application;
 
-pub fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
-    let video_subsystem = sdl_context.video()?;
+mod application;
 
-    let window = video_subsystem
-        .window("rust-sdl2 demo: Video", 800, 600)
-        .position_centered()
-        .opengl()
-        .build()
-        .map_err(|e| e.to_string())?;
+pub fn main() -> Result<(), ()> {
+    let mut application = Application::new(RendererProperties {
+        title: String::from("Tetris"),
+        dimensions: Vec2 { x: 1920, y: 1080 },
+        fullscreen: false,
+        show_cursor: false,
+        opengl: true,
+    });
 
-    let mut canvas = window
-        .into_canvas().build().map_err(|e| e.to_string())?;
-
-    let mut i = 0;
-
-    let mut event_pump = sdl_context.event_pump()?;
-    'infinite: loop {
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => break 'infinite,
-                _ => {}
-            }
-        }
-
-        i = (i + 1) % 255;
-        canvas.set_draw_color(Color::RGB(255, 255 - i, i));
-
-        canvas.clear();
-        canvas.present();
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
-    }
-
-    Ok(())
+    application.run()
 }
