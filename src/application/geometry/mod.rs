@@ -35,6 +35,9 @@ where
 }
 
 impl<T: UnitPrimitive> Vec2<T> {
+    pub const fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
     pub fn destructure(&self) -> (T, T) {
         (self.x, self.y)
     }
@@ -63,6 +66,9 @@ pub struct Rec2<T: UnitPrimitive, U: SizePrimitive> {
 }
 
 impl<T: UnitPrimitive, U: SizePrimitive> Rec2<T, U> {
+    pub const fn new(origin: Vec2<T>, size: Vec2<U>) -> Self {
+        Self { origin, size }
+    }
     pub fn destructure(&self) -> ((T, T), (U, U)) {
         (self.origin.destructure(), self.size.destructure())
     }
@@ -91,7 +97,10 @@ where
     pub end: Vec2<T>,
 }
 
-impl<T: Num + Copy> Line2<T> {
+impl<T: UnitPrimitive> Line2<T> {
+    pub const fn new(start: Vec2<T>, end: Vec2<T>) -> Self {
+        Self { start, end }
+    }
     pub fn destructure(&self) -> (Vec2<T>, Vec2<T>) {
         (self.start, self.end)
     }
@@ -106,6 +115,12 @@ where
     pub vertices: Vec<Vec2<T>>,
 }
 
+impl<T: UnitPrimitive> Pol2<T> {
+    pub const fn new(vertices: Vec<Vec2<T>>) -> Self {
+        Self { vertices }
+    }
+}
+
 /// A Circle representation in 2D space of some numeric type `T`
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Cir2<T>
@@ -116,6 +131,12 @@ where
     pub radius: u32,
 }
 
+impl<T: UnitPrimitive> Cir2<T> {
+    pub const fn new(origin: Vec2<T>, radius: u32) -> Self {
+        Self { origin, radius }
+    }
+}
+
 /// A Ray representation in 2D space of some numeric type
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Ray2<T>
@@ -124,4 +145,10 @@ where
 {
     pub origin: Vec2<T>,
     pub angle: f32,
+}
+
+impl<T: UnitPrimitive> Ray2<T> {
+    pub const fn new(origin: Vec2<T>, angle: f32) -> Self {
+        Self { origin, angle }
+    }
 }
