@@ -2,7 +2,7 @@ use num::{Num, Unsigned};
 use sdl2::rect::Rect;
 
 use crate::application::geometry::{
-    Cir2, IntConvertable, Pol2, Ray2, Rec2, SizePrimitive, UnitPrimitive, Vec2,
+    Cir2, IntConvertable, Line2, Pol2, Ray2, Rec2, SizePrimitive, UnitPrimitive, Vec2,
 };
 use crate::application::render::color::RGBA;
 
@@ -56,12 +56,16 @@ impl Renderer {
         //  .ok();
     }
 
-    pub fn draw_line<T: IntConvertable>(&mut self, from: Vec2<T>, to: Vec2<T>, color: RGBA) {
+    pub fn draw_from<T: IntConvertable>(&mut self, from: Vec2<T>, to: Vec2<T>, color: RGBA) {
         self.set_color(color);
         self.subsystem
             .draw_line(from, to)
             .map_err(|error| eprintln!("{error}"))
             .ok();
+    }
+
+    pub fn draw_line<T: IntConvertable>(&mut self, line: Line2<T>, color: RGBA) {
+        self.draw_from(line.start, line.end, color);
     }
 
     pub fn draw_ray<T: IntConvertable>(&mut self, ray: Ray2<T>, color: RGBA, max_length: T) {
@@ -107,8 +111,8 @@ impl Renderer {
     pub fn draw_poly<T: IntConvertable>(&mut self, pol: Pol2<T>, color: RGBA) {
         let vertices = pol.vertices.len();
         for (i, from) in pol.vertices.iter().enumerate() {
-            let to = &pol.vertices[i % vertices];
-            self.draw_line(*from, *to, color);
+            let to = &pol.vertices[(i + 1) % vertices];
+            self.draw_from(*from, *to, color);
         }
     }
 
