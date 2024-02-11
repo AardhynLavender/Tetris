@@ -1,73 +1,65 @@
-use crate::application::events::{Events, EventStore};
-use crate::application::geometry::{Line2, Pol2, Rec2, Vec2};
-use crate::application::render::{Renderer, RendererProperties as ApplicationProperties};
-use crate::application::render::color::color;
+use sdl2::image::{InitFlag, LoadTexture};
 
-mod asset;
+use crate::application::asset::texture::{TextureLoader, TextureStore};
+use crate::application::events::{Events, EventStore};
+use crate::application::render::{Properties as ApplicationProperties, Renderer};
+
+pub mod asset;
 pub mod events;
 pub mod geometry;
 pub mod render;
 
-const FRAME_WAIT: u32 = 1_000_000_000u32 / 30;
-
 pub struct Application {
-  subsystem: sdl2::Sdl,
-  pub renderer: Renderer,
-  pub event_store: EventStore,
-  pub events: Events,
+  context: sdl2::Sdl,
+
+  events: Events,
+  event_store: EventStore,
+
+  renderer: Renderer,
+  texture_loader: TextureLoader,
+
+  pub loader: fn(&mut TextureLoader),
+  pub updater: fn(&EventStore, &TextureStore, &mut Renderer),
 }
 
 impl Application {
-  /// Construct a new `Application` instance
   pub fn new(properties: ApplicationProperties) -> Self {
-    let subsystem = sdl2::init().unwrap();
+    let context = sdl2::init().unwrap();
+    sdl2::image::init(InitFlag::PNG).unwrap();
 
-    let events = Events::new(&subsystem);
+    let events = Events::new(&context);
     let event_store = EventStore::new();
 
-    let renderer = Renderer::new(&subsystem, properties.clone());
+    let renderer = Renderer::new(&context, properties.clone());
+    let texture_loader = TextureLoader::new(renderer.new_texture_creator());
 
-    subsystem.mouse().show_cursor(properties.show_cursor);
+    context.mouse().show_cursor(properties.show_cursor);
 
-    Self {
-      subsystem,
-      renderer,
-      event_store,
-      events,
-    }
+    Self { context, renderer, texture_loader, event_store, events, updater: |_, _2, _3| {}, loader: |_| {} }
   }
 
-  fn render(&mut self) {
-    let mouse = self.event_store.get_mouse_position();
+  pub fn on_load_resources(&mut self, loader: fn(&mut TextureLoader)) -> &mut Self {
+    self.loader = loader;
+    self
+  }
 
-    let rect = Rec2::new(mouse, Vec2::new(100u8, 200u8));
-    self.renderer.draw_rect(rect, color::GREEN);
-
-    let line = Line2::new(Vec2::default(), mouse);
-    self.renderer.draw_line(line, color::RED);
-
-    let polygon = Pol2::new(vec![
-      Vec2::new(100, 100),
-      Vec2::new(200, 100),
-      Vec2::new(100, 200),
-    ]);
-    self.renderer.draw_poly(polygon, color::CYAN);
-
-    self.renderer.present();
+  pub fn on_update(&mut self, updater: fn(events: &EventStore, textures: &TextureStore, renderer: &mut Renderer)) -> &mut Self {
+    self.updater = updater;
+    self
   }
 
   pub fn run(&mut self) -> Result<(), ()> {
+    (self.loader)(&mut self.texture_loader);
+    let store = self.texture_loader.use_store();
+    
     loop {
       self.events.update(&mut self.event_store);
-      if self.events.is_quit {
-        return Ok(());
-      }
+      if self.events.is_quit { break; }
 
-      // todo: implement fixed timestep rendering
+      (self.updater)(&self.event_store, &store, &mut self.renderer);
 
-      // update...
-
-      self.render();
+      self.renderer.present();
     }
+    Ok(())
   }
 }
