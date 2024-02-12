@@ -15,6 +15,7 @@ pub mod color;
 pub struct Properties {
   pub title: String,
   pub dimensions: Vec2<u32>,
+  pub logical: Option<Vec2<u32>>,
   pub fullscreen: bool,
   pub show_cursor: bool,
   pub vsync: bool,
@@ -32,17 +33,23 @@ impl Renderer {
   pub fn new(context: &sdl2::Sdl, properties: Properties) -> Self {
     let window = new_window(context, properties.clone());
 
-    // apply properties
+    // apply pre-construction properties
     let mut builder = window.into_canvas(); // takes ownership of `Window`
     if properties.vsync { builder = builder.present_vsync(); }
     if properties.hardware_acceleration { builder = builder.accelerated(); }
     if properties.software_acceleration { builder = builder.software(); }
+    if !properties.show_cursor { context.mouse().show_cursor(false); }
 
     // build renderer subsystem
-    let subsystem = builder
+    let mut subsystem = builder
       .build()
       .map_err(|e| e.to_string())
       .unwrap();
+
+    // apply post-construction properties
+    if let Some(size) = properties.logical {
+      subsystem.set_logical_size(size.x, size.y).map_err(|e| e.to_string()).unwrap();
+    }
 
     Self {
       subsystem,
@@ -64,8 +71,9 @@ impl Renderer {
 
   pub fn draw_texture<T: IntConvertable>(&mut self, texture: &Texture, position: Vec2<T>) {
     let (x, y) = position.destructure();
-    let src = Rect::new(0, 0, 100, 100);
-    let dest = Rect::new(x.into(), y.into(), 100, 100);
+    let (w, h) = texture.dimensions.destructure();
+    let src = Rect::new(0, 0, w, h);
+    let dest = Rect::new(x.into(), y.into(), w, h);
     self.subsystem.copy(&texture.internal, src, dest).unwrap();
   }
 
@@ -147,12 +155,12 @@ impl Renderer {
 }
 
 /// Create a new `sdl2::video::Window` with the given `RendererProperties`
-fn new_window(subsystem: &sdl2::Sdl, properties: Properties) -> sdl2::video::Window {
+fn new_window(context: &sdl2::Sdl, properties: Properties) -> sdl2::video::Window {
   let (w, h) = properties.dimensions.destructure();
-  let video_subsystem = subsystem.video().unwrap();
+  let video_subsystem = context.video().unwrap();
 
   let mut builder = video_subsystem.window(properties.title.as_str(), w, h);
-  if properties.fullscreen { builder.fullscreen(); };
+  if properties.fullscreen { builder.fullscreen_desktop(); };
   if properties.opengl { builder.opengl(); };
 
   let window = builder.build().map_err(|e| e.to_string()).unwrap();

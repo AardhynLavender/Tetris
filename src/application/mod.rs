@@ -33,8 +33,6 @@ impl Application {
     let renderer = Renderer::new(&context, properties.clone());
     let texture_loader = TextureLoader::new(renderer.new_texture_creator());
 
-    context.mouse().show_cursor(properties.show_cursor);
-
     Self { context, renderer, texture_loader, event_store, events, updater: |_, _2, _3| {}, loader: |_| {} }
   }
 
@@ -51,7 +49,7 @@ impl Application {
   pub fn run(&mut self) -> Result<(), ()> {
     (self.loader)(&mut self.texture_loader);
     let store = self.texture_loader.use_store();
-    
+
     loop {
       self.events.update(&mut self.event_store);
       if self.events.is_quit { break; }

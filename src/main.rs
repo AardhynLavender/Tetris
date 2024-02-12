@@ -11,6 +11,7 @@ pub fn main() -> Result<(), ()> {
   Application::new(Properties {
     title: String::from("Tetris"),
     dimensions: Vec2 { x: 1920, y: 1080 },
+    logical: Some(Vec2 { x: 96u32, y: 54u32 }),
     fullscreen: false,
     show_cursor: false,
     vsync: true,
