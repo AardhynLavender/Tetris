@@ -33,8 +33,8 @@ impl TextureLoader {
     let internal_texture = self.subsystem.load_texture(filepath.as_str()).map_err(|_| "Failed to load texture")?;
     let texture = Texture::new(internal_texture);
 
-    let filepath = filepath.split("/").last().ok_or("Failed to get filename")?;
-    let basename = filepath.split(".").next().ok_or("Failed to get basename")?;
+    let filename = filepath.split("/").last().ok_or("Failed to get filename")?;
+    let basename = filename.split(".").next().ok_or("Failed to get basename")?;
 
     self.store.add(String::from(basename), texture);
     Ok(())
