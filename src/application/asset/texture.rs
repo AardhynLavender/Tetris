@@ -4,7 +4,7 @@ use sdl2::image::LoadTexture;
 use sdl2::render::{TextureCreator, TextureQuery};
 use sdl2::video::WindowContext;
 
-use crate::application::geometry::Vec2;
+use crate::application::geometry::{Rec2, Vec2};
 
 /// Stores loaded textures by basename
 pub struct TextureStore {
@@ -29,7 +29,7 @@ impl TextureLoader {
     Self { subsystem: creator, store }
   }
 
-  pub fn load(&mut self, filepath: String) -> Result<(), &str> {
+  pub fn load(&mut self, filepath: String) -> Result<String, &str> {
     let internal_texture = self.subsystem.load_texture(filepath.as_str()).map_err(|_| "Failed to load texture")?;
     let texture = Texture::new(internal_texture);
 
@@ -37,11 +37,14 @@ impl TextureLoader {
     let basename = filename.split(".").next().ok_or("Failed to get basename")?;
 
     self.store.add(String::from(basename), texture);
-    Ok(())
+    Ok(String::from(basename))
   }
 
   pub fn use_store(&self) -> &TextureStore { &self.store }
 }
+
+/// A rectangle that represents a segment of a texture
+pub type SrcRect = Rec2<u32, u32>;
 
 /// A texture that can be drawn to the screen.
 pub struct Texture {

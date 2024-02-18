@@ -40,8 +40,12 @@ pub enum Loop {
 }
 
 impl AudioStore {
-  pub fn new() -> Self { Self { sounds: HashMap::new() } }
-  pub fn add(&mut self, name: String, audio: Audio) -> &Audio { self.sounds.entry(name).or_insert(audio) }
+  pub fn new() -> Self {
+    Self { sounds: HashMap::new() }
+  }
+  pub fn add(&mut self, name: String, audio: Audio) -> &Audio {
+    self.sounds.entry(name).or_insert(audio)
+  }
   pub fn play(&self, name: &str, volume: i32, looping: Loop) -> Result<(), &str> {
     let mut audio = self.sounds.get(name).ok_or("Failed to get audio")?;
     let loops = match looping {

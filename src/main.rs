@@ -1,14 +1,25 @@
 use crate::application::Application;
-use crate::application::asset::audio::{AudioLoader, AudioStore, Loop, SoundType};
-use crate::application::asset::texture::{TextureLoader, TextureStore};
+use crate::application::asset::audio::{Loop, SoundType};
 use crate::application::events::EventStore;
 use crate::application::geometry::{Line2, Pol2, Rec2, Vec2};
+use crate::application::managers::{AssetManager, AssetType};
 use crate::application::render::{Properties, Renderer};
 use crate::application::render::color::color;
+use crate::application::utility::types::Size2;
 
 mod application;
 
-const SCREEN_PIXELS: Vec2<u32> = Vec2 { x: 192u32, y: 108u32 };
+const SCREEN_PIXELS: Vec2<u32> = Vec2::new(192, 108);
+const BOARD_DIMENSIONS: Size2 = Vec2::new(10, 20);
+const BOARD_POSITION: Vec2<i32> = Vec2::new(8, 8);
+const TILE_SIZE: Vec2<u32> = Vec2::new(8, 8);
+
+#[derive(Default)]
+struct Tetris {
+  level: u32,
+  score: u32,
+  lines: u32,
+}
 
 pub fn main() -> Result<(), ()> {
   Application::new(Properties {
@@ -23,17 +34,31 @@ pub fn main() -> Result<(), ()> {
     hardware_acceleration: true,
   })
     .on_load_resources(handle_load_resources)
+    .on_start(handle_start)
     .on_update(handle_update)
+    .use_state(handle_state)
     .run()
 }
 
-fn handle_load_resources(texture: &mut TextureLoader, audio: &mut AudioLoader) {
-  texture.load(String::from("asset/spritesheet.png")).unwrap();
-  audio.load(SoundType::Effect, String::from("asset/tetris.ogg")).unwrap(); // clear level
-  audio.load(SoundType::Music, String::from("asset/korobeiniki.ogg")).unwrap(); // tetris theme (A-type)
+fn handle_load_resources(assets: &mut AssetManager) {
+  assets.load(AssetType::Texture, String::from("asset/spritesheet.png"))
+    .expect("failed to load texture");
+  assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/tetris.ogg"))
+    .expect("failed to load sound effect"); // clear 4 lines effect
+  assets.load(AssetType::Audio { sound_type: SoundType::Music }, String::from("asset/korobeiniki.ogg"))
+    .expect("failed to load music"); // tetris theme
 }
 
-fn handle_update(events: &EventStore, textures: &TextureStore, audio: &AudioStore, renderer: &mut Renderer) {
+fn handle_state() -> Tetris {
+  Tetris { level: 0, score: 0, lines: 0 }
+}
+
+fn handle_start() {
+  println!("Tetris started!");
+}
+
+fn handle_update(events: &EventStore, assets: &AssetManager, renderer: &mut Renderer) {
+  let (textures, audio, ..) = assets.use_store();
   let mouse = events.get_mouse_position();
 
   // draw texture
@@ -50,7 +75,8 @@ fn handle_update(events: &EventStore, textures: &TextureStore, audio: &AudioStor
   }
 
   // draw rectangle
-  let rect = Rec2::new(Vec2::new(mouse.x - 32, mouse.y - 32), Vec2::new(64u8, 64u8));
+  let rect_position = Vec2::new(mouse.x - 32, mouse.y - 32);
+  let rect = Rec2::new(rect_position, Vec2::new(64u8, 64u8));
   renderer.draw_rect(rect, color::GREEN);
 
   // draw line
