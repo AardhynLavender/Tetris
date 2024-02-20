@@ -1,11 +1,9 @@
 use sdl2::image::LoadTexture;
 
-use crate::application::asset::audio::AudioLoader;
-use crate::application::asset::texture::TextureLoader;
+use crate::application::asset::{audio::AudioLoader, texture::TextureLoader};
 use crate::application::events::{Events, EventStore};
-use crate::application::managers::AssetManager;
+use crate::application::managers::{assets::AssetManager, sprite::SpriteManager};
 use crate::application::render::{Properties as ApplicationProperties, Renderer};
-use crate::application::tiles::tileset::TilesetStore;
 
 pub mod asset;
 pub mod events;
@@ -18,18 +16,19 @@ pub mod managers;
 // Injector Types
 type LoaderFn = fn(&mut AssetManager);
 type StateFn<T> = fn() -> T;
-type StartFn = fn();
-type UpdateFn = fn(&EventStore, &AssetManager, &mut Renderer);
+type StartFn<TState> = fn(&AssetManager, &mut SpriteManager, &TState);
+type UpdateFn = fn(&EventStore, &SpriteManager, &AssetManager, &mut Renderer);
 type QuitFn = fn();
 
 pub struct Application<TState: Default> {
   loader: LoaderFn,
-  asset_manager: AssetManager,
+  assets: AssetManager,
+  sprites: SpriteManager,
 
   initialize_state: StateFn<TState>,
   state: TState,
 
-  start: StartFn,
+  start: StartFn<TState>,
 
   events: Events,
   event_store: EventStore,
@@ -51,17 +50,20 @@ impl<TState: Default> Application<TState> {
     let event_store = EventStore::new();
 
     let renderer = Renderer::new(&context, properties.clone());
-    let texture_loader = TextureLoader::new(renderer.new_texture_creator());
-    let audio_loader = AudioLoader::new();
-    let tileset_store = TilesetStore::new();
-    let asset_loader = AssetManager::new(texture_loader, audio_loader);
 
     let state = TState::default();
+
+    let assets = AssetManager::new(
+      TextureLoader::new(renderer.new_texture_creator()),
+      AudioLoader::new(),
+    );
+    let sprites = SpriteManager::new();
 
     Self {
       context,
       renderer,
-      asset_manager: asset_loader,
+      assets,
+      sprites,
 
       event_store,
       events,
@@ -69,16 +71,16 @@ impl<TState: Default> Application<TState> {
       initialize_state: || { TState::default() },
       state,
 
-      start: || {},
-      updater: |_, _, _| {},
       loader: |_| {},
+      start: |_, _, _| {},
+      updater: |_, _, _, _| {},
       quit: || {},
     }
   }
 
   // Injectors //
 
-  pub fn on_load_resources(&mut self, loader: LoaderFn) -> &mut Self {
+  pub fn on_load_assets(&mut self, loader: LoaderFn) -> &mut Self {
     self.loader = loader;
     self
   }
@@ -86,7 +88,7 @@ impl<TState: Default> Application<TState> {
     self.initialize_state = initialize_state;
     self
   }
-  pub fn on_start(&mut self, start: StartFn) -> &mut Self {
+  pub fn on_start(&mut self, start: StartFn<TState>) -> &mut Self {
     self.start = start;
     self
   }
@@ -103,13 +105,15 @@ impl<TState: Default> Application<TState> {
 
   pub fn run(&mut self) -> Result<(), ()> {
     // load user resources
-    (self.loader)(&mut self.asset_manager);
+    (self.loader)(&mut self.assets);
 
     // load user initial state
     self.state = (self.initialize_state)();
 
+    let mut sprites = SpriteManager::new();
+
     // start application
-    (self.start)();
+    (self.start)(&self.assets, &mut sprites, &self.state);
 
     loop {
       self.events.update(&mut self.event_store);
@@ -118,7 +122,8 @@ impl<TState: Default> Application<TState> {
       // user defined update
       (self.updater)(
         &self.event_store,
-        &self.asset_manager,
+        &mut sprites,
+        &self.assets,
         &mut self.renderer,
       );
 

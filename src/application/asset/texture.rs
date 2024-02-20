@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use sdl2::image::LoadTexture;
 use sdl2::render::{TextureCreator, TextureQuery};
@@ -8,13 +9,19 @@ use crate::application::geometry::{Rec2, Vec2};
 
 /// Stores loaded textures by basename
 pub struct TextureStore {
-  textures: HashMap<String, Texture>,
+  textures: HashMap<String, Rc<Texture>>,
 }
 
 impl TextureStore {
-  pub fn new() -> Self { Self { textures: HashMap::new() } }
-  pub fn add(&mut self, name: String, texture: Texture) -> &Texture { self.textures.entry(name).or_insert(texture) }
-  pub fn get(&self, name: &str) -> Result<&Texture, &str> { self.textures.get(name).ok_or("Failed to get texture") }
+  pub fn new() -> Self {
+    Self { textures: HashMap::new() }
+  }
+  pub fn add(&mut self, name: String, texture: Rc<Texture>) -> Rc<Texture> {
+    Rc::clone(self.textures.entry(name).or_insert(texture))
+  }
+  pub fn get(&self, name: &str) -> Result<Rc<Texture>, &'static str> {
+    self.textures.get(name).map(Rc::clone).ok_or("Failed to get texture")
+  }
 }
 
 /// Load textures from files into a store
@@ -31,7 +38,7 @@ impl TextureLoader {
 
   pub fn load(&mut self, filepath: String) -> Result<String, &str> {
     let internal_texture = self.subsystem.load_texture(filepath.as_str()).map_err(|_| "Failed to load texture")?;
-    let texture = Texture::new(internal_texture);
+    let texture = Rc::new(Texture::new(internal_texture));
 
     let filename = filepath.split("/").last().ok_or("Failed to get filename")?;
     let basename = filename.split(".").next().ok_or("Failed to get basename")?;

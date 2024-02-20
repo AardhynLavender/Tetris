@@ -1,9 +1,11 @@
+use std::rc::Rc;
+
 use num::{Num, Unsigned};
 use sdl2::rect::{Point, Rect};
 use sdl2::render::TextureCreator;
 use sdl2::video::WindowContext;
 
-use crate::application::asset::texture::Texture;
+use crate::application::asset::texture::{SrcRect, Texture};
 use crate::application::geometry::{
   Cir2, IntConvertable, Line2, Pol2, Ray2, Rec2, SizePrimitive, UnitPrimitive, Vec2,
 };
@@ -69,11 +71,19 @@ impl Renderer {
     self.subsystem.set_draw_color(color);
   }
 
-  pub fn draw_texture<T: IntConvertable>(&mut self, texture: &Texture, position: Vec2<T>) {
+  pub fn draw_texture<T: IntConvertable>(&mut self, texture: &Rc<Texture>, position: Vec2<T>) {
     let (x, y) = position.destructure();
     let (w, h) = texture.dimensions.destructure();
     let src = Rect::new(0, 0, w, h);
     let dest = Rect::new(x.into(), y.into(), w, h);
+    self.subsystem.copy(&texture.internal, src, dest).unwrap();
+  }
+
+  pub fn draw_from_texture<T: IntConvertable>(&mut self, texture: &Rc<Texture>, position: Vec2<T>, from: SrcRect) {
+    let (x, y) = position.destructure();
+    let ((sx, sy), (w, h)) = from.destructure();
+    let dest = Rect::new(x.into(), y.into(), w, h);
+    let src = Rect::new(sx as i32, sy as i32, w, h);
     self.subsystem.copy(&texture.internal, src, dest).unwrap();
   }
 
