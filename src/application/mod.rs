@@ -22,24 +22,21 @@ type UpdateFn = fn(&EventStore, &SpriteManager, &AssetManager, &mut Renderer);
 type QuitFn = fn();
 
 pub struct Application<TState: Default> {
-  loader: LoaderFn,
+  context: sdl2::SdlA
+  renderer: Renderer,
+
+  loader: Option<LoaderFn>,
+  start: Option<StartFn<TState>>,
+  initialize_state: Option<StateFn<TState>>,
+  updater: Option<UpdateFn>,
+  quit: Option<QuitFn>,
+
   assets: AssetManager,
   sprites: SpriteManager,
-
-  initialize_state: StateFn<TState>,
-  state: TState,
-
-  start: StartFn<TState>,
-
   events: Events,
   event_store: EventStore,
 
-  context: sdl2::Sdl,
-  renderer: Renderer,
-
-  updater: UpdateFn,
-
-  quit: QuitFn,
+  state: TState,
 }
 
 impl<TState: Default> Application<TState> {
@@ -49,16 +46,12 @@ impl<TState: Default> Application<TState> {
 
     let events = Events::new(&context);
     let event_store = EventStore::new();
-
-    let renderer = Renderer::new(&context, properties.clone());
-
-    let state = TState::default();
-
-    let assets = AssetManager::new(
-      TextureLoader::new(renderer.new_texture_creator()),
-      AudioPlayer::new(),
-    );
     let sprites = SpriteManager::new();
+    let renderer = Renderer::new(&context, properties.clone());
+    let texture_loader = TextureLoader::new(renderer.new_texture_creator());
+    let audio_player = AudioPlayer::new();
+    let assets = AssetManager::new(texture_loader, audio_player);
+    let state = TState::default();
 
     Self {
       context,
@@ -69,36 +62,36 @@ impl<TState: Default> Application<TState> {
       event_store,
       events,
 
-      initialize_state: || { TState::default() },
+      initialize_state: None,
       state,
 
-      loader: |_| {},
-      start: |_, _, _| {},
-      updater: |_, _, _, _| {},
-      quit: || {},
+      loader: None,
+      start: None,
+      updater: None,
+      quit: None,
     }
   }
 
   // Injectors //
 
   pub fn on_load_assets(&mut self, loader: LoaderFn) -> &mut Self {
-    self.loader = loader;
+    self.loader = Some(loader);
     self
   }
   pub fn use_state(&mut self, initialize_state: StateFn<TState>) -> &mut Self {
-    self.initialize_state = initialize_state;
+    self.initialize_state = Some(initialize_state);
     self
   }
   pub fn on_start(&mut self, start: StartFn<TState>) -> &mut Self {
-    self.start = start;
+    self.start = Some(start);
     self
   }
   pub fn on_update(&mut self, updater: UpdateFn) -> &mut Self {
-    self.updater = updater;
+    self.updater = Some(updater);
     self
   }
   pub fn on_quit(&mut self, quit: QuitFn) -> &mut Self {
-    self.quit = quit;
+    self.quit = Some(quit);
     self
   }
 
@@ -106,24 +99,38 @@ impl<TState: Default> Application<TState> {
 
   pub fn run(&mut self) -> Result<(), ()> {
     // load user resources
-    (self.loader)(&mut self.assets);
+    if let Some(loader) = self.loader {
+      (loader)(&mut self.assets);
+    }
 
     // load user initial state
-    self.state = (self.initialize_state)();
-
-    let mut sprites = SpriteManager::new();
+    self.state = if let Some(initialize_state) = self.initialize_state {
+      (initialize_state)()
+    } else {
+      // todo: this is redundant
+      TState::default()
+    };
 
     // start application
-    (self.start)(&self.assets, &mut sprites, &self.state);
+    if let Some(start) = self.start {
+      (start)(&self.assets, &mut self.sprites, &self.state);
+    }
+
+    // unwrap here to avoid repeated checks
+    let update = if let Some(updater) = self.updater {
+      updater
+    } else {
+      return Err(());
+    };
 
     loop {
       self.events.update(&mut self.event_store);
       if self.events.is_quit { break; }
 
       // user defined update
-      (self.updater)(
+      (update)(
         &self.event_store,
-        &mut sprites,
+        &mut self.sprites,
         &self.assets,
         &mut self.renderer,
       );
