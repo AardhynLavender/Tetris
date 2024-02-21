@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-
 use sdl2::mixer::DEFAULT_CHANNELS;
+
+use crate::application::structure::store::Store;
 
 /// 44.1 kHz
 pub const FREQUENCY: i32 = 44_100;
@@ -23,60 +23,28 @@ pub enum Sound {
   Effect { data: sdl2::mixer::Chunk },
 }
 
-pub struct Audio {
-  pub sound: Sound,
-  pub name: String,
-  pub path: String,
-}
-
-pub struct AudioStore {
-  pub sounds: HashMap<String, Audio>,
-}
-
 pub enum Loop {
   Forever,
   Once,
   For { times: i32 },
 }
 
-impl AudioStore {
-  pub fn new() -> Self {
-    Self { sounds: HashMap::new() }
-  }
-  pub fn add(&mut self, name: String, audio: Audio) -> &Audio {
-    self.sounds.entry(name).or_insert(audio)
-  }
-  pub fn play(&self, name: &str, volume: i32, looping: Loop) -> Result<(), &str> {
-    let mut audio = self.sounds.get(name).ok_or("Failed to get audio")?;
-    let loops = match looping {
-      Loop::Forever => -1,
-      Loop::Once => 0,
-      Loop::For { times } => times,
-    };
-
-    match &audio.sound {
-      Sound::Music { data } => {
-        sdl2::mixer::Music::set_volume(volume);
-        data.play(loops).map_err(|_| "Failed to play music")?;
-        Ok(())
-      }
-      Sound::Effect { data } => {
-        if let channel = sdl2::mixer::Channel::all().play(data, loops).expect("Failed to play effect") {
-          channel.set_volume(volume);
-        }
-        Ok(())
-      }
-    }
-  }
+pub struct Audio {
+  pub sound: Sound,
+  pub name: String,
+  pub path: String,
 }
 
-pub struct AudioLoader {
+type AudioStore = Store<Audio>;
+
+pub struct AudioPlayer {
   store: AudioStore,
 }
 
-impl AudioLoader {
+impl AudioPlayer {
   pub fn new() -> Self {
-    initialize_audio_subsystem().expect("Failed to initialize audio subsystem");
+    initialize_audio_subsystem()
+      .expect("Failed to initialize audio subsystem");
     Self { store: AudioStore::new() }
   }
 
@@ -101,10 +69,30 @@ impl AudioLoader {
     }
   }
 
-  pub fn use_store(&self) -> &AudioStore { &self.store }
+  pub fn play(&self, name: &str, volume: i32, looping: Loop) -> Result<(), String> {
+    let mut audio = self.store.get(name)?;
+    let loops = match looping {
+      Loop::Forever => -1,
+      Loop::Once => 0,
+      Loop::For { times } => times,
+    };
+
+    match &audio.sound {
+      Sound::Music { data } => {
+        sdl2::mixer::Music::set_volume(volume);
+        data.play(loops).map_err(|_| "Failed to play music")?;
+        Ok(())
+      }
+      Sound::Effect { data } => {
+        if let channel = sdl2::mixer::Channel::all().play(data, loops).expect("Failed to play effect") {
+          channel.set_volume(volume);
+        }
+        Ok(())
+      }
+    }
+  }
 }
 
-/// Initialize the SDL_Mixer audio subsystem
 fn initialize_audio_subsystem() -> Result<(), String> {
   sdl2::mixer::open_audio(FREQUENCY, sdl2::mixer::DEFAULT_FORMAT, OUTPUT_CHANNELS, CHUNK_SIZE)?;
   sdl2::mixer::init(sdl2::mixer::InitFlag::all())?;

@@ -3,8 +3,8 @@ use std::hash::Hash;
 use std::rc::Rc;
 
 use crate::application::geometry::Vec2;
-use crate::application::tiles::tile::{Tile, TileData};
-use crate::application::tiles::tileset::Tileset;
+use crate::application::tile::tile::{Tile, TileData};
+use crate::application::tile::tileset::Tileset;
 use crate::application::utility::container::{coordinate_to_index, index_to_coordinate};
 use crate::application::utility::types::{Coordinate, Size2};
 
@@ -98,7 +98,7 @@ impl<'a> Tilemap {
   }
 }
 
-// iterate over tiles
+// iterate over tile
 impl<'a> IntoIterator for &'a Tilemap {
   type Item = &'a Option<Tile>;
   type IntoIter = std::slice::Iter<'a, Option<Tile>>;
@@ -108,7 +108,7 @@ impl<'a> IntoIterator for &'a Tilemap {
   }
 }
 
-// iterate over mutable tiles
+// iterate over mutable tile
 impl<'a> IntoIterator for &'a mut Tilemap {
   type Item = &'a mut Option<Tile>;
   type IntoIter = std::slice::IterMut<'a, Option<Tile>>;

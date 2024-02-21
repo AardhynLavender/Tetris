@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::rc::Rc;
 
 use sdl2::image::LoadTexture;
@@ -6,25 +5,10 @@ use sdl2::render::{TextureCreator, TextureQuery};
 use sdl2::video::WindowContext;
 
 use crate::application::geometry::{Rec2, Vec2};
+use crate::application::structure::store::HeapStore;
 
-/// Stores loaded textures by basename
-pub struct TextureStore {
-  textures: HashMap<String, Rc<Texture>>,
-}
+pub type TextureStore = HeapStore<Texture>;
 
-impl TextureStore {
-  pub fn new() -> Self {
-    Self { textures: HashMap::new() }
-  }
-  pub fn add(&mut self, name: String, texture: Rc<Texture>) -> Rc<Texture> {
-    Rc::clone(self.textures.entry(name).or_insert(texture))
-  }
-  pub fn get(&self, name: &str) -> Result<Rc<Texture>, &'static str> {
-    self.textures.get(name).map(Rc::clone).ok_or("Failed to get texture")
-  }
-}
-
-/// Load textures from files into a store
 pub struct TextureLoader {
   store: TextureStore,
   subsystem: TextureCreator<WindowContext>,
@@ -32,7 +16,7 @@ pub struct TextureLoader {
 
 impl TextureLoader {
   pub fn new(creator: TextureCreator<WindowContext>) -> Self {
-    let store = TextureStore::new();
+    let store = HeapStore::new();
     Self { subsystem: creator, store }
   }
 
@@ -50,10 +34,8 @@ impl TextureLoader {
   pub fn use_store(&self) -> &TextureStore { &self.store }
 }
 
-/// A rectangle that represents a segment of a texture
 pub type SrcRect = Rec2<u32, u32>;
 
-/// A texture that can be drawn to the screen.
 pub struct Texture {
   pub internal: sdl2::render::Texture,
   pub dimensions: Vec2<u32>,

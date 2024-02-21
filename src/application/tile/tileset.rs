@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use crate::application::asset::texture::Texture;
 use crate::application::geometry::{Rec2, Vec2};
-use crate::application::tiles::tile::{TileData, TileId};
+use crate::application::tile::tile::{TileData, TileId};
 use crate::application::utility::types::Size2;
 
 // Store //
@@ -34,7 +34,7 @@ pub struct Tileset {
 
 impl Tileset {
   pub fn new(texture: Rc<Texture>, tile_size: Size2) -> Self {
-    let tiles = make_tiles(texture.dimensions, tile_size).expect("Failed to make tiles");
+    let tiles = make_tiles(texture.dimensions, tile_size).expect("Failed to make tile");
     Self { texture, tile_size, tiles }
   }
 

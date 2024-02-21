@@ -2,15 +2,15 @@ use std::rc::Rc;
 
 use crate::application::Application;
 use crate::application::asset::audio::{Loop, SoundType};
-use crate::application::events::EventStore;
+use crate::application::event::EventStore;
 use crate::application::geometry::{Line2, Pol2, Rec2, Vec2};
-use crate::application::managers::assets::{AssetManager, AssetType};
-use crate::application::managers::sprite::{SpriteManager, SpriteType};
+use crate::application::manager::assets::{AssetManager, AssetType};
+use crate::application::manager::sprite::{SpriteManager, SpriteType};
 use crate::application::render::{Properties, Renderer};
 use crate::application::render::color::color;
-use crate::application::tiles::tile::TileId;
-use crate::application::tiles::tilemap::Tilemap;
-use crate::application::tiles::tileset::Tileset;
+use crate::application::tile::tile::TileId;
+use crate::application::tile::tilemap::Tilemap;
+use crate::application::tile::tileset::Tileset;
 use crate::application::utility::types::Size2;
 
 mod application;

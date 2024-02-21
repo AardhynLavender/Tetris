@@ -1,17 +1,18 @@
 use sdl2::image::LoadTexture;
 
-use crate::application::asset::{audio::AudioLoader, texture::TextureLoader};
-use crate::application::events::{Events, EventStore};
-use crate::application::managers::{assets::AssetManager, sprite::SpriteManager};
+use crate::application::asset::{audio::AudioPlayer, texture::TextureLoader};
+use crate::application::event::{Events, EventStore};
+use crate::application::manager::{assets::AssetManager, sprite::SpriteManager};
 use crate::application::render::{Properties as ApplicationProperties, Renderer};
 
 pub mod asset;
-pub mod events;
+pub mod event;
 pub mod geometry;
 pub mod render;
-pub mod tiles;
+pub mod tile;
 pub mod utility;
-pub mod managers;
+pub mod manager;
+mod structure;
 
 // Injector Types
 type LoaderFn = fn(&mut AssetManager);
@@ -55,7 +56,7 @@ impl<TState: Default> Application<TState> {
 
     let assets = AssetManager::new(
       TextureLoader::new(renderer.new_texture_creator()),
-      AudioLoader::new(),
+      AudioPlayer::new(),
     );
     let sprites = SpriteManager::new();
 

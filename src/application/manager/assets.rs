@@ -1,6 +1,6 @@
-use crate::application::asset::audio::{AudioLoader, AudioStore, SoundType};
+use crate::application::asset::audio::{AudioPlayer, SoundType};
 use crate::application::asset::texture::{TextureLoader, TextureStore};
-use crate::application::tiles::tileset::TilesetStore;
+use crate::application::tile::tileset::TilesetStore;
 
 // Static immutable game assets //
 
@@ -11,12 +11,12 @@ pub enum AssetType {
 
 pub struct AssetManager {
   pub textures: TextureLoader,
-  pub audio: AudioLoader,
+  pub audio: AudioPlayer,
   pub tilesets: TilesetStore,
 }
 
 impl AssetManager {
-  pub fn new(textures: TextureLoader, audio: AudioLoader) -> Self {
+  pub fn new(textures: TextureLoader, audio: AudioPlayer) -> Self {
     Self {
       textures,
       audio,
@@ -31,8 +31,8 @@ impl AssetManager {
     }
   }
 
-  pub fn use_store(&self) -> (&TextureStore, &AudioStore, &TilesetStore) {
-    (&self.textures.use_store(), &self.audio.use_store(), &self.tilesets)
+  pub fn use_store(&self) -> (&TextureStore, &AudioPlayer, &TilesetStore) {
+    (&self.textures.use_store(), &self.audio, &self.tilesets)
   }
 }
 

@@ -55,7 +55,7 @@ impl Events {
     }
   }
 
-  /// Update a `keystore` with polled events
+  /// Update a `keystore` with polled event
   pub fn update(&mut self, event_store: &mut EventStore) {
     let events = self.event_pump.poll_iter();
     for event in events {

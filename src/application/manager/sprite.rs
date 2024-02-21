@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::application::tiles::tilemap::Tilemap;
+use crate::application::tile::tilemap::Tilemap;
 
 pub enum SpriteType {
   Tilemap(Tilemap),
