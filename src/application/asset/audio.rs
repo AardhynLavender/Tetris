@@ -1,17 +1,4 @@
-use sdl2::mixer::DEFAULT_CHANNELS;
-
 use crate::application::structure::store::Store;
-
-/// 44.1 kHz
-pub const FREQUENCY: i32 = 44_100;
-/// Signed 16-bit samples
-pub const FORMAT: sdl2::mixer::AudioFormat = sdl2::mixer::DEFAULT_FORMAT;
-/// 2 channels (stereo)
-pub const OUTPUT_CHANNELS: i32 = DEFAULT_CHANNELS;
-/// Number of channels available for mixing sound effects
-pub const MIXER_CHANNELS: i32 = 16;
-/// Samples processed per frame
-pub const CHUNK_SIZE: i32 = 2048;
 
 pub enum SoundType {
   Music,
@@ -93,8 +80,20 @@ impl AudioPlayer {
   }
 }
 
+/// Samples per second
+pub const FREQUENCY: i32 = 44_100;
+// 44.1 kHz
+/// Signed 16-bit samples
+pub const FORMAT: sdl2::mixer::AudioFormat = sdl2::mixer::DEFAULT_FORMAT;
+/// 2 channels (stereo)
+pub const OUTPUT_CHANNELS: i32 = sdl2::mixer::DEFAULT_CHANNELS;
+/// Number of channels available for mixing sound effects
+pub const MIXER_CHANNELS: i32 = 16;
+/// Samples processed per frame
+pub const CHUNK_SIZE: i32 = 2048;
+
 fn initialize_audio_subsystem() -> Result<(), String> {
-  sdl2::mixer::open_audio(FREQUENCY, sdl2::mixer::DEFAULT_FORMAT, OUTPUT_CHANNELS, CHUNK_SIZE)?;
+  sdl2::mixer::open_audio(FREQUENCY, FORMAT, OUTPUT_CHANNELS, CHUNK_SIZE)?;
   sdl2::mixer::init(sdl2::mixer::InitFlag::all())?;
   sdl2::mixer::allocate_channels(MIXER_CHANNELS);
   Ok(())
