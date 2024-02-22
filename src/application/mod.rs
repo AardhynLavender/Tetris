@@ -2,7 +2,7 @@ use sdl2::image::LoadTexture;
 
 use crate::application::asset::{audio::AudioPlayer, texture::TextureLoader};
 use crate::application::event::{Events, EventStore};
-use crate::application::manager::{assets::AssetManager, sprite::SpriteManager};
+use crate::application::manager::{assets::AssetManager, object::ObjectManager};
 use crate::application::render::{Properties as ApplicationProperties, Renderer};
 
 pub mod asset;
@@ -17,8 +17,8 @@ mod structure;
 // Injector Types
 type LoaderFn = fn(&mut AssetManager);
 type StateFn<T> = fn() -> T;
-type StartFn<TState> = fn(&AssetManager, &mut SpriteManager, &TState);
-type UpdateFn = fn(&EventStore, &SpriteManager, &AssetManager, &mut Renderer);
+type StartFn<TState> = fn(&AssetManager, &mut ObjectManager<TState>, &TState);
+type UpdateFn<TState> = fn(&EventStore, &ObjectManager<TState>, &AssetManager, &mut Renderer);
 type QuitFn = fn();
 
 pub struct Application<TState: Default> {
@@ -28,11 +28,11 @@ pub struct Application<TState: Default> {
   loader: Option<LoaderFn>,
   start: Option<StartFn<TState>>,
   initialize_state: Option<StateFn<TState>>,
-  updater: Option<UpdateFn>,
+  updater: Option<UpdateFn<TState>>,
   quit: Option<QuitFn>,
 
   assets: AssetManager,
-  sprites: SpriteManager,
+  objects: ObjectManager<TState>,
   events: Events,
   event_store: EventStore,
 
@@ -46,18 +46,18 @@ impl<TState: Default> Application<TState> {
 
     let events = Events::new(&context);
     let event_store = EventStore::new();
-    let sprites = SpriteManager::new();
     let renderer = Renderer::new(&context, properties.clone());
     let texture_loader = TextureLoader::new(renderer.new_texture_creator());
     let audio_player = AudioPlayer::new();
     let assets = AssetManager::new(texture_loader, audio_player);
     let state = TState::default();
+    let objects = ObjectManager::new();
 
     Self {
       context,
       renderer,
       assets,
-      sprites,
+      objects,
 
       event_store,
       events,
@@ -86,7 +86,7 @@ impl<TState: Default> Application<TState> {
     self.start = Some(start);
     self
   }
-  pub fn on_update(&mut self, updater: UpdateFn) -> &mut Self {
+  pub fn on_update(&mut self, updater: UpdateFn<TState>) -> &mut Self {
     self.updater = Some(updater);
     self
   }
@@ -113,7 +113,7 @@ impl<TState: Default> Application<TState> {
 
     // start application
     if let Some(start) = self.start {
-      (start)(&self.assets, &mut self.sprites, &self.state);
+      (start)(&self.assets, &mut self.objects, &self.state);
     }
 
     // unwrap here to avoid repeated checks
@@ -127,16 +127,20 @@ impl<TState: Default> Application<TState> {
       self.events.update(&mut self.event_store);
       if self.events.is_quit { break; }
 
+      self.objects.event(&self.event_store);
+      self.objects.update(&mut self.state);
+
       // user defined update
       (update)(
         &self.event_store,
-        &mut self.sprites,
+        &mut self.objects,
         &self.assets,
         &mut self.renderer,
       );
 
       // todo: ensure consistent frame rate with accumulator and fixed time step
 
+      self.objects.render(&mut self.renderer);
       self.renderer.present();
     }
     Ok(())

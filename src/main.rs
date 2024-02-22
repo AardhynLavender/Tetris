@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::application::Application;
@@ -5,7 +6,7 @@ use crate::application::asset::audio::{Loop, SoundType};
 use crate::application::event::EventStore;
 use crate::application::geometry::{Line2, Pol2, Rec2, Vec2};
 use crate::application::manager::assets::{AssetManager, AssetType};
-use crate::application::manager::sprite::{SpriteManager, SpriteType};
+use crate::application::manager::object::ObjectManager;
 use crate::application::render::{Properties, Renderer};
 use crate::application::render::color::color;
 use crate::application::tile::tile::TileId;
@@ -64,31 +65,31 @@ fn handle_load_resources(assets: &mut AssetManager) {
   // create tileset
   let (textures, ..) = assets.use_store();
   let texture = textures.get("spritesheet").expect("failed to fetch texture for building assets");
-  assets.tilesets.add(String::from("spritesheet"), Rc::new(Tileset::new(texture, TILE_SIZE)));
+  assets.tilesets.add(String::from("spritesheet"), Rc::new(Tileset::new(texture.clone(), TILE_SIZE)));
 }
 
 fn handle_state() -> Tetris {
   Tetris { level: 0, score: 0, lines: 0 }
 }
 
-fn handle_start(assets: &AssetManager, sprites: &mut SpriteManager, _: &Tetris) {
+fn handle_start(assets: &AssetManager, objects: &mut ObjectManager<Tetris>, _: &Tetris) {
   println!("Tetris started!");
 
   let tileset = assets.tilesets.get("spritesheet").expect("failed to fetch tileset");
-  let mut tilemap = Tilemap::new(Rc::clone(&tileset), BOARD_POSITION, BOARD_DIMENSIONS);
+  let mut tilemap = Rc::new(RefCell::new(Tilemap::new(Rc::clone(&tileset), BOARD_POSITION, BOARD_DIMENSIONS)));
 
   // checkerboard pattern
   for y in 0..BOARD_DIMENSIONS.y {
     for x in 0..BOARD_DIMENSIONS.x {
       let tile_id = if (x + y) % 2 == 0 { PURPLE_TILE } else { BLUE_TILE };
-      tilemap.set_tile_at_coord(Vec2::new(x, y), tileset.get_tiledata(tile_id).expect("failed to fetch tiledata"));
+      tilemap.borrow_mut().set_tile_at_coord(Vec2::new(x, y), tileset.get_tiledata(tile_id).expect("failed to fetch tiledata"));
     }
   }
 
-  sprites.add(String::from("board"), SpriteType::Tilemap(tilemap));
+  objects.add(String::from("board"), tilemap);
 }
 
-fn handle_update(events: &EventStore, sprites: &SpriteManager, assets: &AssetManager, renderer: &mut Renderer) {
+fn handle_update(events: &EventStore, objects: &ObjectManager<Tetris>, assets: &AssetManager, renderer: &mut Renderer) {
   let (textures, audio, ..) = assets.use_store();
   let mouse = events.get_mouse_position();
 
@@ -103,20 +104,6 @@ fn handle_update(events: &EventStore, sprites: &SpriteManager, assets: &AssetMan
   // play sounds
   if events.is_key_pressed(sdl2::keyboard::Keycode::Return) {
     audio.play("tetris", 10, Loop::Once).unwrap();
-  }
-
-  // draw tilemap
-  let tilemap = sprites.get("board").expect("failed to fetch tilemap for rendering");
-  if let SpriteType::Tilemap(tilemap) = tilemap {
-    for tile in tilemap {
-      if let Some(tile) = tile {
-        renderer.draw_from_texture(
-          &textures.get("spritesheet").expect("failed to fetch texture for rendering"),
-          tile.position,
-          tile.src,
-        );
-      }
-    }
   }
 
   // draw rectangle

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 pub struct HeapStore<T: ?Sized> {
-  store: HashMap<String, Rc<T>>,
+  pub store: HashMap<String, Rc<T>>,
 }
 
 impl<T: ?Sized> HeapStore<T> {
@@ -51,8 +51,10 @@ impl<T: ?Sized> HeapStore<T> {
   }
 }
 
+// Stack Store //
+
 pub struct Store<T> {
-  store: HashMap<String, T>,
+  pub store: HashMap<String, T>,
 }
 
 impl<T> Store<T> {
@@ -100,3 +102,4 @@ impl<T> Store<T> {
     self.store.is_empty()
   }
 }
+

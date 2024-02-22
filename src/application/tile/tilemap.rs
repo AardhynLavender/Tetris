@@ -2,7 +2,10 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::rc::Rc;
 
+use crate::application::event::EventStore;
 use crate::application::geometry::Vec2;
+use crate::application::manager::object::Object;
+use crate::application::render::Renderer;
 use crate::application::tile::tile::{Tile, TileData};
 use crate::application::tile::tileset::Tileset;
 use crate::application::utility::container::{coordinate_to_index, index_to_coordinate};
@@ -96,6 +99,18 @@ impl<'a> Tilemap {
     let coordinate = index_to_coordinate(index, self.dimensions);
     self.coord_to_worldspace(coordinate)
   }
+}
+
+impl<TState> Object<TState> for Tilemap {
+  fn update(&mut self, _: &mut TState) {}
+  fn render(&self, renderer: &mut Renderer) {
+    for tile in self {
+      if let Some(tile) = tile {
+        renderer.draw_from_texture(&self.tileset.texture, tile.position, tile.src);
+      }
+    }
+  }
+  fn event(&mut self, _: &EventStore) {}
 }
 
 // iterate over tile
