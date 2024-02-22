@@ -5,38 +5,52 @@ use sdl2::keyboard::Keycode;
 
 use crate::application::geometry::Vec2;
 
+type KeyStore = HashSet<Keycode>;
+
 pub struct EventStore {
-  pressed_keys: HashSet<Keycode>,
+  held_keys: KeyStore,
+  pressed_keys: KeyStore,
   mouse_position: Vec2<i32>,
 }
 
 impl EventStore {
-  /// Construct an `EventStore` instance
   pub fn new() -> Self {
     Self {
       pressed_keys: HashSet::new(),
+      held_keys: HashSet::new(),
       mouse_position: Vec2::default(),
     }
   }
-  /// press `keycode`
+
+  // Mutators //
+
+  pub fn clear_pressed_keys(&mut self) {
+    self.pressed_keys.clear();
+  }
   pub fn press_key(&mut self, keycode: Keycode) {
     self.pressed_keys.insert(keycode);
+    self.held_keys.insert(keycode);
   }
-  /// Raise `keycode`
   pub fn raise_key(&mut self, keycode: Keycode) {
-    self.pressed_keys.remove(&keycode);
+    // no need to remove from `pressed_keys` as it will be cleared at the start of the next frame
+    self.held_keys.remove(&keycode);
   }
-  /// Check if `keycode` is pressed
-  pub fn is_pressed(&self, keycode: Keycode) -> bool {
-    self.pressed_keys.contains(&keycode)
-  }
-  /// Check where the mouse is
-  pub fn get_mouse_position(&self) -> Vec2<i32> {
-    self.mouse_position
-  }
-  /// Set the current mouse position
   pub fn set_mose_position(&mut self, position: Vec2<i32>) {
     self.mouse_position = position;
+  }
+
+  // Accessors //
+
+  /// Returns true if the key was pressed this frame.
+  pub fn is_key_pressed(&self, keycode: Keycode) -> bool {
+    self.pressed_keys.contains(&keycode)
+  }
+  /// Returns true if the key is currently held down.
+  pub fn is_key_held(&self, keycode: Keycode) -> bool {
+    self.held_keys.contains(&keycode)
+  }
+  pub fn get_mouse_position(&self) -> Vec2<i32> {
+    self.mouse_position
   }
 }
 
@@ -46,7 +60,6 @@ pub struct Events {
 }
 
 impl Events {
-  /// construct an `Events` instance from `event_properties`
   pub fn new(context: &sdl2::Sdl) -> Self {
     let event_pump = context.event_pump().unwrap();
     Self {
@@ -55,16 +68,21 @@ impl Events {
     }
   }
 
-  /// Update a `keystore` with polled event
   pub fn update(&mut self, event_store: &mut EventStore) {
+    event_store.clear_pressed_keys();
     let events = self.event_pump.poll_iter();
+
     for event in events {
       match event {
         Event::Quit { .. } => {
           self.is_quit = true;
         }
         Event::KeyDown { keycode, .. } => {
-          keycode.map(|keycode| event_store.press_key(keycode));
+          keycode.map(|keycode| {
+            if !event_store.is_key_held(keycode) {
+              event_store.press_key(keycode);
+            }
+          });
         }
         Event::KeyUp { keycode, .. } => {
           keycode.map(|keycode| event_store.raise_key(keycode));

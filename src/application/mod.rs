@@ -22,7 +22,7 @@ type UpdateFn = fn(&EventStore, &SpriteManager, &AssetManager, &mut Renderer);
 type QuitFn = fn();
 
 pub struct Application<TState: Default> {
-  context: sdl2::SdlA
+  context: sdl2::Sdl,
   renderer: Renderer,
 
   loader: Option<LoaderFn>,

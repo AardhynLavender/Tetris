@@ -96,12 +96,12 @@ fn handle_update(events: &EventStore, sprites: &SpriteManager, assets: &AssetMan
   renderer.draw_texture(&textures.get("spritesheet").expect("failed to fetch texture for rendering"), Vec2::new(150, 10));
 
   // play music
-  if events.is_pressed(sdl2::keyboard::Keycode::Space) {
+  if events.is_key_pressed(sdl2::keyboard::Keycode::Space) {
     audio.play("korobeiniki", 10, Loop::Forever).unwrap();
   }
 
   // play sounds
-  if events.is_pressed(sdl2::keyboard::Keycode::Return) {
+  if events.is_key_pressed(sdl2::keyboard::Keycode::Return) {
     audio.play("tetris", 10, Loop::Once).unwrap();
   }
 
