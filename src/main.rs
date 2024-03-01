@@ -7,7 +7,7 @@ use crate::application::geometry::Vec2;
 use crate::application::manager::assets::{AssetManager, AssetType};
 use crate::application::manager::object::{Object, ObjectManager};
 use crate::application::render::{Properties, Renderer};
-use crate::application::render::color::RGBA;
+use crate::application::render::color::{color, RGBA};
 use crate::application::tile::tileset::Tileset;
 use crate::board::Board;
 
@@ -16,7 +16,7 @@ mod constants;
 mod piece;
 mod board;
 
-const SCREEN_COLOR: RGBA = RGBA::new(24, 24, 37, 255);
+const SCREEN_COLOR: RGBA = color::MANTLE;
 const WINDOW_DIMENSIONS: Vec2<u32> = Vec2::new(1920, 1080);
 const SCREEN_PIXELS: Vec2<u32> = Vec2::new(384, 216);
 const TILE_SIZE: Vec2<u32> = Vec2::new(8, 8);
