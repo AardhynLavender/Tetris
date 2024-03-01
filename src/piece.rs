@@ -26,8 +26,6 @@ impl Piece {
     let tile_data = tileset.get_tiledata(piece_data.tile_id).expect("failed to get tile data");
     let position = Coordinate::new(SPAWN_OFFSET_X, 0 + piece_data.offset_y as i32);
 
-    println!("p: {:?}", piece_data.shape[0]);
-
     Self {
       shape_type,
       rotation: DEFAULT_ROTATION,
@@ -92,7 +90,6 @@ fn evaluate_transform(piece: &Piece, event: Transform, tilemap: &Tilemap) -> Tra
     .collect();
 
   // check bounds
-  println!("{:?}", unchecked_coordinates);
   let is_bound = unchecked_coordinates.iter()
     .all(|c| tilemap.is_bound(c));
   if !is_bound {
@@ -150,7 +147,6 @@ fn evaluate_rotation(piece: &Piece, tilemap: &Tilemap) -> RotationResult {
   let unchecked_coordinates: Vec<_> = new_shape.iter()
     .filter(|coord| !shape.contains(coord))
     .collect();
-  println!("{:?}", unchecked_coordinates);
 
   // check bounds
   let is_bound = unchecked_coordinates.iter()
