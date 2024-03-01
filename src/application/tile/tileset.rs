@@ -1,28 +1,14 @@
-use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::application::asset::texture::Texture;
 use crate::application::geometry::{Rec2, Vec2};
+use crate::application::structure::store::HeapStore;
 use crate::application::tile::tile::{TileData, TileId};
 use crate::application::utility::types::Size2;
 
 // Store //
 
-pub struct TilesetStore {
-  tilesets: HashMap<String, Rc<Tileset>>,
-}
-
-impl TilesetStore {
-  pub fn new() -> Self {
-    Self { tilesets: HashMap::new() }
-  }
-  pub fn add(&mut self, name: String, tileset: Rc<Tileset>) -> Rc<Tileset> {
-    Rc::clone(self.tilesets.entry(name).or_insert(tileset))
-  }
-  pub fn get(&self, name: &str) -> Result<Rc<Tileset>, &str> {
-    self.tilesets.get(name).map(Rc::clone).ok_or("Failed to get tileset")
-  }
-}
+pub type TilesetStore = HeapStore<Tileset>;
 
 // Tileset //
 
