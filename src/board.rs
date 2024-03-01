@@ -3,35 +3,48 @@ use std::rc::Rc;
 use sdl2::keyboard::Keycode;
 
 use crate::application::event::EventStore;
-use crate::application::geometry::Vec2;
+use crate::application::geometry::{Rec2, Vec2};
 use crate::application::manager::object::Object;
+use crate::application::render::color::color;
 use crate::application::render::Renderer;
 use crate::application::tile::{tile::TileData, tilemap::Tilemap, tileset::Tileset};
-use crate::application::utility::types::{Coordinate, Size2};
+use crate::application::utility::types::{Coordinate, Size, Size2};
 use crate::constants::shape::ShapeType;
 use crate::piece::{erase_piece, Piece, rotate_piece, Transform, transform_piece, write_piece};
 
 const BOARD_DIMENSIONS: Size2 = Vec2::new(10, 20);
-const BOARD_POSITION: Vec2<i32> = Vec2::new(1, 1);
+const BORDER_MARGIN: Size = 2;
+const BOARD_POSITION: Vec2<i32> = Vec2::new(384 / 2 - BOARD_DIMENSIONS.x as i32 * 8 / 2, 216 / 2 - BOARD_DIMENSIONS.y as i32 * 8 / 2);
+const TILE_PIECE_MARGIN: Size = 1; // margin between pieces in the tileset
 
 pub struct Board {
   piece: Option<Piece>,
   tilemap: Tilemap,
+  border: Size2,
 }
 
 impl Board {
   pub fn new(tileset: Rc<Tileset>) -> Self {
     let mut tilemap = Tilemap::new(Rc::clone(&tileset), BOARD_POSITION, BOARD_DIMENSIONS);
-    Self { piece: None, tilemap }
+    let (w, h) = tilemap.dimensions.destructure();
+    let (tiles_x, tiles_y) = tileset.tile_size.destructure();
+    let border = Vec2::new(w * tiles_x + BORDER_MARGIN + TILE_PIECE_MARGIN, h * tiles_y + BORDER_MARGIN + TILE_PIECE_MARGIN);
+    Self { piece: None, tilemap, border }
   }
 
   pub fn render(&self, renderer: &mut Renderer) {
+    // draw tiles
     for tile in &self.tilemap {
       if let Some(tile) = tile {
-        let position = Vec2::new(tile.position.x + self.tilemap.position.x, tile.position.y + self.tilemap.position.y);
+        let position = Vec2::new(tile.position.x, tile.position.y);
         renderer.draw_from_texture(&self.tilemap.tileset.texture, position, tile.src);
       }
     }
+
+    // draw border
+    let border_position = Vec2::new(self.tilemap.position.x - BORDER_MARGIN as i32, self.tilemap.position.y - BORDER_MARGIN as i32);
+    let rect = Rec2::new(border_position, self.border);
+    renderer.draw_rect(rect, color::SURFACE_0);
   }
 
   pub fn update(&mut self, events: &EventStore) {
