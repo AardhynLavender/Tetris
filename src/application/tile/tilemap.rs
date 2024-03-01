@@ -47,7 +47,7 @@ pub type MapData = Vec<Option<Tile>>;
  *       further, a single tilemap may need to reference multiple tilesets.
  */
 pub struct Tilemap {
-  tileset: Rc<Tileset>,
+  pub tileset: Rc<Tileset>,
   tiles: MapData,
   pub position: Vec2<i32>,
   pub dimensions: Size2,
@@ -62,7 +62,7 @@ impl<'a> Tilemap {
 
   // accessors //
 
-  pub fn get_at_coord(&self, coordinate: Coordinate) -> Option<&Tile> {
+  pub fn get_at_coord(&self, coordinate: &Coordinate) -> Option<&Tile> {
     let index = coordinate_to_index(coordinate, self.dimensions);
     self.get_at_index(index)
   }
@@ -75,41 +75,59 @@ impl<'a> Tilemap {
 
   // mutation //
 
-  pub fn set_tile_at_coord(&mut self, coordinate: Coordinate, data: TileData) {
-    let position = self.coord_to_worldspace(coordinate);
+  pub fn set_tile_at_coord(&mut self, coordinate: &Coordinate, data: TileData) {
+    let position = self.coord_to_worldspace(&coordinate);
     let tile = Tile::new(data, position);
-    let index = coordinate_to_index(coordinate, self.dimensions);
-    self.tiles[index as usize] = Some(tile);
+    let index = coordinate_to_index(&coordinate, self.dimensions);
+    self.tiles[index] = Some(tile);
   }
   pub fn set_tile_at_index(&mut self, index: usize, data: TileData) {
-    let coordinate = index_to_coordinate(index, self.dimensions);
-    self.set_tile_at_coord(coordinate, data);
+    let dimensions = Coordinate::new(self.dimensions.x as i32, self.dimensions.y as i32);
+    let coordinate = index_to_coordinate(index, &dimensions);
+    self.set_tile_at_coord(&coordinate, data);
+  }
+
+  pub fn clear_tile_at_coord(&mut self, coordinate: &Coordinate) {
+    let index = coordinate_to_index(&coordinate, self.dimensions);
+    self.tiles[index] = None;
+  }
+  pub fn clear_tile_at_index(&mut self, index: usize) {
+    let dimensions = Coordinate::new(self.dimensions.x as i32, self.dimensions.y as i32);
+    let coordinate = index_to_coordinate(index, &dimensions);
+    self.clear_tile_at_coord(&coordinate);
   }
 
   // conversion //
 
-  fn coord_to_worldspace(&self, coordinate: Coordinate) -> Vec2<i32> {
+  fn coord_to_worldspace(&self, coordinate: &Coordinate) -> Vec2<i32> {
     let (tile_width, tile_height) = self.tileset.tile_size.destructure();
     Vec2::new(
-      self.position.x + (coordinate.x * tile_width) as i32,
-      self.position.y + (coordinate.y * tile_height) as i32,
+      self.position.x + (coordinate.x * tile_width as i32),
+      self.position.y + (coordinate.y * tile_height as i32),
     )
   }
   fn index_to_worldspace(&self, index: usize) -> Vec2<i32> {
-    let coordinate = index_to_coordinate(index, self.dimensions);
-    self.coord_to_worldspace(coordinate)
+    let dimensions = Coordinate::new(self.dimensions.x as i32, self.dimensions.y as i32);
+    let coordinate = index_to_coordinate(index, &dimensions);
+    self.coord_to_worldspace(&coordinate)
+  }
+
+  // Queries //
+
+  pub fn is_bound(&self, coordinate: &Coordinate) -> bool {
+    let x_bound = coordinate.x >= 0 && coordinate.x < self.dimensions.x as i32;
+    let y_bound = coordinate.y >= 0 && coordinate.y < self.dimensions.y as i32;
+    x_bound && y_bound
+  }
+
+  pub fn is_occupied(&self, coordinate: &Coordinate) -> bool {
+    self.get_at_coord(coordinate).is_some()
   }
 }
 
 impl<TState> Object<TState> for Tilemap {
   fn update(&mut self, _: &mut TState) {}
-  fn render(&self, renderer: &mut Renderer) {
-    for tile in self {
-      if let Some(tile) = tile {
-        renderer.draw_from_texture(&self.tileset.texture, tile.position, tile.src);
-      }
-    }
-  }
+  fn render(&self, renderer: &mut Renderer) {}
   fn event(&mut self, _: &EventStore) {}
 }
 

@@ -25,7 +25,7 @@ impl<T: UnitPrimitive + Into<i32>> IntConvertable for T {}
 // Vector 2D //
 
 /// A vector representation in 2D space of some numeric type `T`
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Vec2<T>
   where
     T: UnitPrimitive,
