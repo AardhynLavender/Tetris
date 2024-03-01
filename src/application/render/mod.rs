@@ -24,6 +24,7 @@ pub struct Properties {
   pub opengl: bool,
   pub hardware_acceleration: bool,
   pub software_acceleration: bool,
+  pub screen_color: RGBA,
 }
 
 pub struct Renderer {
@@ -53,6 +54,8 @@ impl Renderer {
       subsystem.set_logical_size(size.x, size.y).map_err(|e| e.to_string()).unwrap();
     }
 
+    subsystem.set_draw_color(properties.screen_color);
+
     Self {
       subsystem,
       properties,
@@ -63,7 +66,7 @@ impl Renderer {
 
   pub fn present(&mut self) {
     self.subsystem.present();
-    self.set_color(RGBA::default());
+    self.set_color(self.properties.screen_color);
     self.subsystem.clear();
   }
 
