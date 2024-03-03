@@ -5,7 +5,6 @@ use crate::application::asset::audio::SoundType;
 use crate::application::event::EventStore;
 use crate::application::geometry::Vec2;
 use crate::application::manager::assets::{AssetManager, AssetType};
-use crate::application::manager::object::{Object, ObjectManager};
 use crate::application::render::{Properties, Renderer};
 use crate::application::render::color::{color, RGBA};
 use crate::application::tile::tileset::Tileset;
@@ -67,7 +66,7 @@ fn handle_load_resources(assets: &mut AssetManager) {
   assets.tilesets.add(String::from("spritesheet"), Rc::new(Tileset::new(texture.clone(), TILE_SIZE)));
 }
 
-fn handle_start(assets: &AssetManager, _: &mut ObjectManager<Tetris>) -> Tetris {
+fn handle_start(assets: &AssetManager) -> Tetris {
   let tileset = assets.tilesets.get("spritesheet").expect("failed to fetch tileset");
 
   let mut board = Board::new(tileset);
@@ -81,10 +80,10 @@ fn handle_start(assets: &AssetManager, _: &mut ObjectManager<Tetris>) -> Tetris 
   }
 }
 
-fn handle_update(events: &EventStore, _: &mut ObjectManager<Tetris>, state: &mut Tetris, _: &mut Renderer) {
+fn handle_update(events: &EventStore, state: &mut Tetris, _: &mut Renderer) {
   state.board.update(events);
 }
 
-fn handle_render(_: &ObjectManager<Tetris>, state: &Tetris, renderer: &mut Renderer) {
+fn handle_render(state: &Tetris, renderer: &mut Renderer) {
   state.board.render(renderer);
 }

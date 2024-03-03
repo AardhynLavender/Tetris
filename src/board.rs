@@ -4,7 +4,6 @@ use sdl2::keyboard::Keycode;
 
 use crate::application::event::EventStore;
 use crate::application::geometry::{Rec2, Vec2};
-use crate::application::manager::object::Object;
 use crate::application::render::color::color;
 use crate::application::render::Renderer;
 use crate::application::tile::{tile::TileData, tilemap::Tilemap, tileset::Tileset};

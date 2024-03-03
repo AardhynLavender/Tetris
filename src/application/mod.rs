@@ -2,7 +2,7 @@ use sdl2::image::LoadTexture;
 
 use crate::application::asset::{audio::AudioPlayer, texture::TextureLoader};
 use crate::application::event::{Events, EventStore};
-use crate::application::manager::{assets::AssetManager, object::ObjectManager};
+use crate::application::manager::assets::AssetManager;
 use crate::application::render::{Properties as ApplicationProperties, Renderer};
 
 pub mod asset;
@@ -16,9 +16,9 @@ mod structure;
 
 // Injector Types
 type LoaderFn = fn(&mut AssetManager);
-type StartFn<TState> = fn(&AssetManager, &mut ObjectManager<TState>) -> TState;
-type UpdateFn<TState> = fn(&EventStore, &mut ObjectManager<TState>, &mut TState, &mut Renderer);
-type RenderFn<TState> = fn(&ObjectManager<TState>, &TState, &mut Renderer);
+type StartFn<TState> = fn(&AssetManager) -> TState;
+type UpdateFn<TState> = fn(&EventStore, &mut TState, &mut Renderer);
+type RenderFn<TState> = fn(&TState, &mut Renderer);
 type QuitFn = fn();
 
 pub struct Application<TState> {
@@ -32,7 +32,6 @@ pub struct Application<TState> {
   quit: Option<QuitFn>,
 
   assets: AssetManager,
-  objects: ObjectManager<TState>,
   events: Events,
   event_store: EventStore,
 }
@@ -48,13 +47,11 @@ impl<TState> Application<TState> {
     let texture_loader = TextureLoader::new(renderer.new_texture_creator());
     let audio_player = AudioPlayer::new();
     let assets = AssetManager::new(texture_loader, audio_player);
-    let objects = ObjectManager::new();
 
     Self {
       context,
       renderer,
       assets,
-      objects,
 
       event_store,
       events,
@@ -106,7 +103,7 @@ impl<TState> Application<TState> {
     };
 
     // start application
-    let mut state = (start)(&self.assets, &mut self.objects);
+    let mut state = (start)(&self.assets);
 
     let update = if let Some(updater) = self.update {
       updater
@@ -126,16 +123,13 @@ impl<TState> Application<TState> {
       if self.events.is_quit {
         break;
       }
-      self.objects.event(&self.event_store);
 
       // todo: ensure consistent frame rate with accumulator and fixed time step
       // update
-      (update)(&self.event_store, &mut self.objects, &mut state, &mut self.renderer);
-      self.objects.update(&mut state);
+      (update)(&self.event_store, &mut state, &mut self.renderer);
 
       // render
-      (render)(&self.objects, &state, &mut self.renderer);
-      self.objects.render(&mut self.renderer);
+      (render)(&state, &mut self.renderer);
       self.renderer.present();
     }
 

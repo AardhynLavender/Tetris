@@ -1,10 +1,7 @@
 use std::hash::Hash;
 use std::rc::Rc;
 
-use crate::application::event::EventStore;
 use crate::application::geometry::Vec2;
-use crate::application::manager::object::Object;
-use crate::application::render::Renderer;
 use crate::application::structure::store::Store;
 use crate::application::tile::tile::{Tile, TileData};
 use crate::application::tile::tileset::Tileset;
@@ -100,12 +97,6 @@ impl Tilemap {
   pub fn is_occupied(&self, coordinate: &Coordinate) -> bool {
     self.get_at_coord(coordinate).is_some()
   }
-}
-
-impl<TState> Object<TState> for Tilemap {
-  fn update(&mut self, _: &mut TState) {}
-  fn render(&self, renderer: &mut Renderer) {}
-  fn event(&mut self, _: &EventStore) {}
 }
 
 // iterate over tile
