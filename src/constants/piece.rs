@@ -1,4 +1,5 @@
 use crate::application::tile::tile::TileId;
+use crate::application::utility::random::random;
 use crate::application::utility::types::Coordinate;
 
 type RawPieceData = &'static [&'static [&'static str]];
@@ -161,18 +162,33 @@ impl PieceData {
   }
 }
 
+#[derive(Debug)]
 pub enum ShapeType { I, J, L, O, S, T, Z }
 
 impl ShapeType {
   pub fn data(&self) -> PieceData {
     match self {
-      ShapeType::I => PieceData::new(get_shape_rotation_coordinates(I_PIECE), 1, 2),
+      ShapeType::I => PieceData::new(get_shape_rotation_coordinates(I_PIECE), 1, 1),
       ShapeType::J => PieceData::new(get_shape_rotation_coordinates(J_PIECE), 2, 1),
       ShapeType::L => PieceData::new(get_shape_rotation_coordinates(L_PIECE), 3, 1),
       ShapeType::O => PieceData::new(get_shape_rotation_coordinates(O_PIECE), 4, 0),
       ShapeType::S => PieceData::new(get_shape_rotation_coordinates(S_PIECE), 5, 1),
       ShapeType::T => PieceData::new(get_shape_rotation_coordinates(T_PIECE), 6, 1),
       ShapeType::Z => PieceData::new(get_shape_rotation_coordinates(Z_PIECE), 7, 1),
+    }
+  }
+
+  pub fn random() -> Self {
+    let index = random(0, 7);
+    match index {
+      0 => ShapeType::I,
+      1 => ShapeType::J,
+      2 => ShapeType::L,
+      3 => ShapeType::O,
+      4 => ShapeType::S,
+      5 => ShapeType::T,
+      6 => ShapeType::Z,
+      _ => panic!("random shape index out of bounds"),
     }
   }
 }
