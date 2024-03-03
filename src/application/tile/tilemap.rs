@@ -53,17 +53,24 @@ impl Tilemap {
     let position = self.coord_to_worldspace(&coordinate);
     let tile = Tile::new(data, position);
     let index = coordinate_to_index(&coordinate, self.dimensions);
-    self.tiles[index] = Some(tile);
+
+    if let Some(current_tile) = self.tiles.get_mut(index) { // bound check
+      *current_tile = Some(tile);
+    }
   }
   pub fn set_tile_at_index(&mut self, index: usize, data: TileData) {
     let dimensions = Coordinate::new(self.dimensions.x as i32, self.dimensions.y as i32);
     let coordinate = index_to_coordinate(index, &dimensions);
+
     self.set_tile_at_coord(&coordinate, data);
   }
 
   pub fn clear_tile_at_coord(&mut self, coordinate: &Coordinate) {
     let index = coordinate_to_index(&coordinate, self.dimensions);
-    self.tiles[index] = None;
+
+    if let Some(tile) = self.tiles.get_mut(index) { // bound check
+      *tile = None;
+    }
   }
   pub fn clear_tile_at_index(&mut self, index: usize) {
     let dimensions = Coordinate::new(self.dimensions.x as i32, self.dimensions.y as i32);
