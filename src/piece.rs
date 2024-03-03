@@ -1,10 +1,15 @@
 use crate::application::tile::{tile::TileData, tilemap::Tilemap};
 use crate::application::tile::tileset::Tileset;
+use crate::application::time::Timer;
 use crate::application::utility::types::Coordinate;
-use crate::constants::shape::{DEFAULT_ROTATION, ShapeData, ShapeType};
+use crate::constants::game::PLAYER_TRANSFORM_COOLDOWN;
+use crate::constants::piece::{DEFAULT_ROTATION, ShapeData, ShapeType};
 
 const SPAWN_OFFSET_X: i32 = 4; // center the piece on the board.rs
 
+const FIRST_ROW: i32 = 0;
+
+#[derive(Debug, PartialEq)]
 pub enum PieceState {
   /// The piece is still active and can be transformed.
   Active,
@@ -12,26 +17,35 @@ pub enum PieceState {
   Landed,
 }
 
+#[derive(Debug)]
 pub struct Piece {
   pub shape_type: ShapeType,
-  pub rotation: usize,
+  pub state: PieceState,
   pub shape_data: ShapeData,
-  pub position: Coordinate,
   pub tile_data: TileData,
+
+  pub rotation: usize,
+  pub position: Coordinate,
+
+  pub player_transform_cooldown: Timer,
 }
 
 impl Piece {
   pub fn build(shape_type: ShapeType, tileset: &Tileset) -> Self {
     let piece_data = shape_type.data();
     let tile_data = tileset.get_tiledata(piece_data.tile_id).expect("failed to get tile data");
-    let position = Coordinate::new(SPAWN_OFFSET_X, 0 + piece_data.offset_y as i32);
+    let position = Coordinate::new(SPAWN_OFFSET_X, FIRST_ROW - piece_data.offset_y as i32);
 
     Self {
       shape_type,
-      rotation: DEFAULT_ROTATION,
-      shape_data: piece_data.shape,
-      position,
+      state: PieceState::Active,
       tile_data,
+      shape_data: piece_data.shape,
+
+      rotation: DEFAULT_ROTATION,
+      position,
+
+      player_transform_cooldown: Timer::new(PLAYER_TRANSFORM_COOLDOWN),
     }
   }
 }
@@ -54,7 +68,7 @@ pub fn erase_piece(piece: &Piece, tilemap: &mut Tilemap) {
 
 // Transform //
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum Transform { Left, Right, Down }
 
 impl Transform {
@@ -67,9 +81,10 @@ impl Transform {
   }
 }
 
+#[derive(PartialEq, Debug)]
 pub enum TransformResult {
   /// The piece can be transformed.
-  Success { position: Coordinate, shape: Vec<Coordinate> },
+  Success { position: Coordinate },
   /// The piece is unable to move due to a collision with shape or bounds.
   Collision,
   /// The piece will land and become inactive.
@@ -113,18 +128,25 @@ fn evaluate_transform(piece: &Piece, event: Transform, tilemap: &Tilemap) -> Tra
     return TransformResult::Collision;
   }
 
-  TransformResult::Success {
-    position: new_position,
-    shape: new_shape,
-  }
+  TransformResult::Success { position: new_position }
 }
 
 pub fn transform_piece(piece: &mut Piece, event: Transform, tilemap: &mut Tilemap) -> PieceState {
-  if let TransformResult::Success { position, shape } = evaluate_transform(piece, event, tilemap) {
-    piece.position = position;
-    return PieceState::Active;
+  match evaluate_transform(piece, event, tilemap) {
+    TransformResult::Success { position } => {
+      piece.position = position;
+      piece.state = PieceState::Active;
+      piece.player_transform_cooldown.reset();
+      PieceState::Active
+    }
+    TransformResult::Land => {
+      piece.state = PieceState::Landed;
+      PieceState::Landed
+    }
+    TransformResult::Collision => {
+      PieceState::Active
+    }
   }
-  PieceState::Landed
 }
 
 // Rotation //
