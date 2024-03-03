@@ -12,7 +12,8 @@ pub mod render;
 pub mod tile;
 pub mod utility;
 pub mod manager;
-mod structure;
+pub mod structure;
+pub mod time;
 
 // Injector Types
 type LoaderFn = fn(&mut AssetManager);

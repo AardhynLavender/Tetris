@@ -94,7 +94,7 @@ fn evaluate_transform(piece: &Piece, event: Transform, tilemap: &Tilemap) -> Tra
     .all(|c| tilemap.is_bound(c));
   if !is_bound {
     let on_bottom = unchecked_coordinates.iter()
-      .any(|c| c.y >= tilemap.dimensions.y as i32);
+      .any(|c| c.y >= tilemap.dimensions.y as i32 - 1);
     if event == Transform::Down && on_bottom {
       // if we're moving down and out of bounds, we've landed
       return TransformResult::Land;
