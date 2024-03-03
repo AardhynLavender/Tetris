@@ -3,7 +3,7 @@ use crate::application::tile::tileset::Tileset;
 use crate::application::utility::types::Coordinate;
 use crate::constants::shape::{DEFAULT_ROTATION, ShapeData, ShapeType};
 
-const SPAWN_OFFSET_X: i32 = 4; // center the piece on the board
+const SPAWN_OFFSET_X: i32 = 4; // center the piece on the board.rs
 
 pub enum PieceState {
   /// The piece is still active and can be transformed.

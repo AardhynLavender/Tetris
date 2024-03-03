@@ -7,14 +7,10 @@ use crate::application::geometry::{Rec2, Vec2};
 use crate::application::render::color::color;
 use crate::application::render::Renderer;
 use crate::application::tile::{tile::TileData, tilemap::Tilemap, tileset::Tileset};
-use crate::application::utility::types::{Coordinate, Size, Size2};
+use crate::application::utility::types::{Coordinate, Size2};
+use crate::constants::board::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_MARGIN, TILE_PIECE_MARGIN};
 use crate::constants::shape::ShapeType;
 use crate::piece::{erase_piece, Piece, rotate_piece, Transform, transform_piece, write_piece};
-
-const BOARD_DIMENSIONS: Size2 = Vec2::new(10, 20);
-const BORDER_MARGIN: Size = 2;
-const BOARD_POSITION: Vec2<i32> = Vec2::new(384 / 2 - BOARD_DIMENSIONS.x as i32 * 8 / 2, 216 / 2 - BOARD_DIMENSIONS.y as i32 * 8 / 2);
-const TILE_PIECE_MARGIN: Size = 1; // margin between pieces in the tileset
 
 pub struct Board {
   piece: Option<Piece>,

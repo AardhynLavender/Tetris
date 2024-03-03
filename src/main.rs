@@ -6,19 +6,15 @@ use crate::application::event::EventStore;
 use crate::application::geometry::Vec2;
 use crate::application::manager::assets::{AssetManager, AssetType};
 use crate::application::render::{Properties, Renderer};
-use crate::application::render::color::{color, RGBA};
 use crate::application::tile::tileset::Tileset;
 use crate::board::Board;
+use crate::constants::board::TILE_SIZE;
+use crate::constants::window::{SCREEN_COLOR, SCREEN_PIXELS, TITLE, WINDOW_DIMENSIONS};
 
 mod application;
 mod constants;
 mod piece;
 mod board;
-
-const SCREEN_COLOR: RGBA = color::MANTLE;
-const WINDOW_DIMENSIONS: Vec2<u32> = Vec2::new(1920, 1080);
-const SCREEN_PIXELS: Vec2<u32> = Vec2::new(384, 216);
-const TILE_SIZE: Vec2<u32> = Vec2::new(8, 8);
 
 struct Tetris {
   level: u32,
@@ -29,7 +25,7 @@ struct Tetris {
 
 pub fn main() -> Result<(), ()> {
   Application::new(Properties {
-    title: String::from("Tetris"),
+    title: String::from(TITLE),
     dimensions: WINDOW_DIMENSIONS,
     logical: Some(SCREEN_PIXELS),
     fullscreen: false,
@@ -63,7 +59,7 @@ fn handle_load_resources(assets: &mut AssetManager) {
   // create tileset
   let (textures, ..) = assets.use_store();
   let texture = textures.get("spritesheet").expect("failed to fetch texture for building assets");
-  assets.tilesets.add(String::from("spritesheet"), Rc::new(Tileset::new(texture.clone(), TILE_SIZE)));
+  assets.tilesets.add(String::from("spritesheet"), Rc::new(Tileset::new(texture.clone(), Vec2::new(TILE_SIZE, TILE_SIZE))));
 }
 
 fn handle_start(assets: &AssetManager) -> Tetris {
