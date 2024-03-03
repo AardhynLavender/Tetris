@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::hash::Hash;
 use std::rc::Rc;
 
@@ -6,6 +5,7 @@ use crate::application::event::EventStore;
 use crate::application::geometry::Vec2;
 use crate::application::manager::object::Object;
 use crate::application::render::Renderer;
+use crate::application::structure::store::Store;
 use crate::application::tile::tile::{Tile, TileData};
 use crate::application::tile::tileset::Tileset;
 use crate::application::utility::container::{coordinate_to_index, index_to_coordinate};
@@ -13,30 +13,7 @@ use crate::application::utility::types::{Coordinate, Size2};
 
 // Store //
 
-pub struct TilemapStore {
-  tilemaps: HashMap<String, Tilemap>,
-}
-
-impl TilemapStore {
-  pub fn new() -> Self {
-    Self { tilemaps: HashMap::new() }
-  }
-  pub fn add(&mut self, name: String, tilemap: Tilemap) -> &mut Tilemap {
-    self.tilemaps.entry(name).or_insert(tilemap)
-  }
-  pub fn get(&mut self, name: &str) -> Result<&Tilemap, &str> {
-    match self.tilemaps.get_mut(name) {
-      Some(tilemap) => Ok(tilemap),
-      None => Err("Tilemap not found"),
-    }
-  }
-  pub fn get_mut(&mut self, name: &str) -> Result<&mut Tilemap, &str> {
-    match self.tilemaps.get_mut(name) {
-      Some(tilemap) => Ok(tilemap),
-      None => Err("Tilemap not found"),
-    }
-  }
-}
+pub type TilesetStore = Store<Tilemap>;
 
 // Tilemap //
 
@@ -53,7 +30,7 @@ pub struct Tilemap {
   pub dimensions: Size2,
 }
 
-impl<'a> Tilemap {
+impl Tilemap {
   pub fn new(tileset: Rc<Tileset>, position: Vec2<i32>, dimensions: Size2) -> Self {
     let size_tiles = dimensions.x * dimensions.y;
     let tiles: MapData = vec![None; size_tiles as usize];
