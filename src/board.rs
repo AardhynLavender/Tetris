@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::time::Duration;
 
 use sdl2::keyboard::Keycode;
 
@@ -15,6 +16,11 @@ use crate::constants::board::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_MARGIN, T
 use crate::constants::game::FALL_COOLDOWN;
 use crate::constants::piece::ShapeType;
 use crate::piece::{erase_piece, Piece, PieceState, rotate_piece, Transform, transform_piece, write_piece};
+
+pub enum SpawnState {
+  Space,
+  Occupied,
+}
 
 pub struct Board {
   piece: Option<Piece>,
@@ -63,23 +69,24 @@ impl Board {
         transform_piece(piece, Transform::Down, &mut self.tilemap);
       });
 
-      let player_can_move = piece.player_transform_cooldown.consume();
-      let down = events.is_key_held(Keycode::S) && player_can_move;
-      let left = events.is_key_held(Keycode::A) && player_can_move;
-      let right = events.is_key_held(Keycode::D) && player_can_move;
+      let player_can_slide = piece.player_slide_cooldown.done();
+      let player_can_drop = piece.player_drop_cooldown.done();
+      let down = events.is_key_held(Keycode::S) && player_can_drop;
+      let left = events.is_key_held(Keycode::A) && player_can_slide;
+      let right = events.is_key_held(Keycode::D) && player_can_slide;
 
       if down {
         transform_piece(piece, Transform::Down, &mut self.tilemap);
         self.drop_timeout.reset(); // reset the computer drop timeout
-        piece.player_transform_cooldown.reset(); // reset the computer drop timeout
+        piece.player_drop_cooldown.reset(); // reset the player drop cooldown
       }
       if left {
         transform_piece(piece, Transform::Left, &mut self.tilemap);
-        piece.player_transform_cooldown.reset(); // reset the computer drop timeout
+        piece.player_slide_cooldown.reset(); // reset the player slide cooldown
       }
       if right {
         transform_piece(piece, Transform::Right, &mut self.tilemap);
-        piece.player_transform_cooldown.reset(); // reset the computer drop timeout
+        piece.player_slide_cooldown.reset(); // reset the player slide cooldown
       }
 
       // rotate
@@ -88,26 +95,33 @@ impl Board {
       }
 
       write_piece(piece, &mut self.tilemap); // write the new piece
-
-      if piece.state == PieceState::Landed {
-        let full_lines = self.get_full_line();
-        for line in full_lines {
-          self.clear_line(line).expect("failed to clear line");
-          self.move_lines_down(line).expect("failed to move lines down");
-        }
-        self.spawn_piece();
-      }
-    } else {
-      self.spawn_piece();
     }
   }
 
+  /// Checks if the current `piece` has landed
+  pub fn drop_complete(&self) -> bool {
+    if let Some(piece) = &self.piece {
+      return piece.state == PieceState::Landed;
+    }
+    false
+  }
+
+  /// Set the speed the computer drops a shape
+  pub fn set_speed_ms(&mut self, speed_ms: u64) {
+    self.drop_timeout = Timeout::new(Duration::from_millis(speed_ms), Repeat::Forever);
+  }
+
+  /// Reset `Piece` to a new random shape and check if it can be spawned
   pub fn spawn_piece(&mut self) {
     let piece = Piece::build(ShapeType::random(), &*self.tilemap.tileset);
+
+    // todo: spawn check
+
     write_piece(&piece, &mut self.tilemap);
     self.piece = Some(piece);
   }
 
+  /// Transform tiles on lines above `line` by {0, 1}
   pub fn move_lines_down(&mut self, line: usize) -> Result<(), String> {
     if line > BOARD_DIMENSIONS.y as usize {
       return Err(String::from("line move out of bounds"));
@@ -137,8 +151,8 @@ impl Board {
     Ok(())
   }
 
-  fn get_full_line(&self) -> Vec<usize> {
-    // todo: recreate this declaratively using array methods
+  /// Get lines containing only `Some` tiles
+  pub fn get_full_lines(&self) -> Vec<usize> {
     let mut full_lines = Vec::new();
     for y in 0..BOARD_DIMENSIONS.y {
       let mut line_full = true;
@@ -157,7 +171,8 @@ impl Board {
     full_lines
   }
 
-  fn clear_line(&mut self, line: usize) -> Result<(), String> {
+  /// Set all tiles in a line to `None`
+  pub fn clear_line(&mut self, line: usize) -> Result<(), String> {
     if line >= BOARD_DIMENSIONS.y as usize {
       return Err(String::from("line clear out of bounds"));
     }

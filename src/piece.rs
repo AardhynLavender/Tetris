@@ -2,7 +2,7 @@ use crate::application::tile::{tile::TileData, tilemap::Tilemap};
 use crate::application::tile::tileset::Tileset;
 use crate::application::time::Timer;
 use crate::application::utility::types::Coordinate;
-use crate::constants::game::PLAYER_TRANSFORM_COOLDOWN;
+use crate::constants::game::{PLAYER_DROP_COOLDOWN, PLAYER_SLIDE_COOLDOWN};
 use crate::constants::piece::{DEFAULT_ROTATION, ShapeData, ShapeType};
 
 const SPAWN_OFFSET_X: i32 = 4; // center the piece on the board.rs
@@ -27,7 +27,8 @@ pub struct Piece {
   pub rotation: usize,
   pub position: Coordinate,
 
-  pub player_transform_cooldown: Timer,
+  pub player_slide_cooldown: Timer,
+  pub player_drop_cooldown: Timer,
 }
 
 impl Piece {
@@ -45,7 +46,8 @@ impl Piece {
       rotation: DEFAULT_ROTATION,
       position,
 
-      player_transform_cooldown: Timer::new(PLAYER_TRANSFORM_COOLDOWN),
+      player_slide_cooldown: Timer::new(PLAYER_SLIDE_COOLDOWN),
+      player_drop_cooldown: Timer::new(PLAYER_DROP_COOLDOWN),
     }
   }
 }
@@ -136,7 +138,8 @@ pub fn transform_piece(piece: &mut Piece, event: Transform, tilemap: &mut Tilema
     TransformResult::Success { position } => {
       piece.position = position;
       piece.state = PieceState::Active;
-      piece.player_transform_cooldown.reset();
+      piece.player_drop_cooldown.reset();
+      piece.player_slide_cooldown.reset();
       PieceState::Active
     }
     TransformResult::Land => {

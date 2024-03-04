@@ -9,12 +9,15 @@ use crate::application::render::{Properties, Renderer};
 use crate::application::tile::tileset::Tileset;
 use crate::board::Board;
 use crate::constants::board::TILE_SIZE;
+use crate::constants::game::{LINES_PER_LEVEL, MAX_TETRIS_LEVEL, START_TETRIS_LEVEL};
 use crate::constants::window::{SCREEN_COLOR, SCREEN_PIXELS, TITLE, WINDOW_DIMENSIONS};
+use crate::math::{calculate_score, calculate_speed_ms};
 
 mod application;
 mod constants;
 mod piece;
 mod board;
+mod math;
 
 struct Tetris {
   level: u32,
@@ -69,7 +72,7 @@ fn handle_start(assets: &AssetManager) -> Tetris {
   board.spawn_piece();
 
   Tetris {
-    level: 0,
+    level: START_TETRIS_LEVEL,
     score: 0,
     lines: 0,
     board,
@@ -78,8 +81,47 @@ fn handle_start(assets: &AssetManager) -> Tetris {
 
 fn handle_update(events: &EventStore, state: &mut Tetris, _: &mut Renderer) {
   state.board.update(events);
+
+  if !state.board.drop_complete() {
+    return;
+  }
+
+  // check for full lines
+  let full_lines = state.board.get_full_lines();
+  let lines_cleared = full_lines.len() as u32;
+
+  if lines_cleared > 0 {
+    state.lines += lines_cleared;
+
+    // clear lines and drop
+    for line in full_lines {
+      state.board.clear_line(line).expect("failed to clear line");
+      state.board.move_lines_down(line).expect("failed to move lines down");
+    }
+
+    // calculate score
+    let points = calculate_score(lines_cleared, state.level).expect("failed to calculate score");
+    state.score += points;
+
+    // check level advance
+    if state.lines >= state.level * LINES_PER_LEVEL {
+      state.level += 1;
+      if (state.level <= MAX_TETRIS_LEVEL) {
+        let new_speed = calculate_speed_ms(state.level).expect("failed to calculate speed");
+        state.board.set_speed_ms(new_speed);
+      } else {
+        // todo: handle beat game, good luck testing this
+      }
+    }
+
+    println!("Level: {}, Score: {}, Lines: {}", state.level, state.score, state.lines);
+  }
+
+  state.board.spawn_piece();
 }
 
 fn handle_render(state: &Tetris, renderer: &mut Renderer) {
   state.board.render(renderer);
+
+  // todo: render score, level, lines, preview, etc.
 }
