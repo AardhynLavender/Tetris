@@ -88,8 +88,6 @@ impl Board {
       let right = events.is_key_held(Keycode::D) && player_can_slide;
       let rotate = events.is_key_pressed(Keycode::J);
 
-      println!("{}", player_can_slide);
-
       // rotate
       if rotate {
         rotate_piece(piece, &mut self.tilemap);
@@ -98,13 +96,11 @@ impl Board {
 
       // slide
       if left {
-        println!("left");
         transform_piece(piece, Transform::Left, &mut self.tilemap);
         piece.player_slide_cooldown.restart(); // reset the player slide cooldown
         board_event = BoardEvent::MoveLeft;
       }
       if right {
-        println!("right");
         transform_piece(piece, Transform::Right, &mut self.tilemap);
         piece.player_slide_cooldown.restart(); // reset the player slide cooldown
         board_event = BoardEvent::MoveRight;
