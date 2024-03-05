@@ -46,8 +46,8 @@ impl Piece {
       rotation: DEFAULT_ROTATION,
       position,
 
-      player_slide_cooldown: Timer::new(PLAYER_SLIDE_COOLDOWN),
-      player_drop_cooldown: Timer::new(PLAYER_DROP_COOLDOWN),
+      player_slide_cooldown: Timer::new(PLAYER_SLIDE_COOLDOWN, true),
+      player_drop_cooldown: Timer::new(PLAYER_DROP_COOLDOWN, true),
     }
   }
 }
@@ -138,8 +138,6 @@ pub fn transform_piece(piece: &mut Piece, event: Transform, tilemap: &mut Tilema
     TransformResult::Success { position } => {
       piece.position = position;
       piece.state = PieceState::Active;
-      piece.player_drop_cooldown.reset();
-      piece.player_slide_cooldown.reset();
       PieceState::Active
     }
     TransformResult::Land => {

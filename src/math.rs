@@ -1,4 +1,4 @@
-use crate::constants::game::{DOUBLE_LINE_MULTIPLIER, FALL_COOLDOWN, LEVEL_SPEED_MULTIPLIER, MAX_TETRIS_LEVEL, SINGLE_LINE_MULTIPLIER, START_TETRIS_LEVEL, TETRIS_MULTIPLIER, TRIPLE_LINE_MULTIPLIER};
+use crate::constants::game::{DOUBLE_LINE_MULTIPLIER, FALL_COOLDOWN, LEVEL_SPEED_MULTIPLIER, MAX_LINES, MAX_TETRIS_LEVEL, SINGLE_LINE_MULTIPLIER, START_TETRIS_LEVEL, TETRIS_MULTIPLIER, TRIPLE_LINE_MULTIPLIER};
 
 pub fn level_invariant(level: u32) -> Result<(), String> {
   if level < START_TETRIS_LEVEL {
@@ -30,9 +30,15 @@ pub fn calculate_score(lines: u32, level: u32) -> Result<u32, String> {
 
 pub fn calculate_speed_ms(level: u32) -> Result<u64, String> {
   level_invariant(level)?;
-
-  println!("Calculating speed for level {}", level);
   let speed = (FALL_COOLDOWN.as_millis() as f32 * (LEVEL_SPEED_MULTIPLIER.powf(level as f32))) as u64;
-  println!("Speed: {}", speed);
   Ok(speed)
+}
+
+pub fn determine_sfx(lines: u32) -> Option<&'static str> {
+  if lines > 0 && lines < MAX_LINES {
+    return Some("line");
+  } else if lines == MAX_LINES {
+    return Some("tetris");
+  }
+  return None;
 }

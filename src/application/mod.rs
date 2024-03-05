@@ -18,7 +18,7 @@ pub mod time;
 // Injector Types
 type LoaderFn = fn(&mut AssetManager);
 type StartFn<TState> = fn(&AssetManager) -> TState;
-type UpdateFn<TState> = fn(&EventStore, &mut TState, &mut Renderer);
+type UpdateFn<TState> = fn(&EventStore, &AssetManager, &mut TState, &mut Renderer);
 type RenderFn<TState> = fn(&TState, &mut Renderer);
 type QuitFn = fn();
 
@@ -127,7 +127,7 @@ impl<TState> Application<TState> {
 
       // todo: ensure consistent frame rate with accumulator and fixed time step
       // update
-      (update)(&self.event_store, &mut state, &mut self.renderer);
+      (update)(&self.event_store, &self.assets, &mut state, &mut self.renderer);
 
       // render
       (render)(&state, &mut self.renderer);

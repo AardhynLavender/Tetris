@@ -22,6 +22,14 @@ pub enum SpawnState {
   Occupied,
 }
 
+pub enum BoardEvent {
+  MoveLeft,
+  MoveRight,
+  Rotate,
+  Land,
+  Nothing,
+}
+
 pub struct Board {
   piece: Option<Piece>,
   tilemap: Tilemap,
@@ -60,13 +68,17 @@ impl Board {
     renderer.draw_rect(rect, color::SURFACE_0);
   }
 
-  pub fn update(&mut self, events: &EventStore) {
+  pub fn update(&mut self, events: &EventStore) -> BoardEvent {
+    let mut board_event = BoardEvent::Nothing;
+
     if let Some(piece) = &mut self.piece {
       erase_piece(piece, &mut self.tilemap); // erase the old piece
 
       // move the piece down
       self.drop_timeout.on_timeout(&mut || {
-        transform_piece(piece, Transform::Down, &mut self.tilemap);
+        if transform_piece(piece, Transform::Down, &mut self.tilemap) == PieceState::Landed {
+          board_event = BoardEvent::Land;
+        }
       });
 
       let player_can_slide = piece.player_slide_cooldown.done();
@@ -74,28 +86,43 @@ impl Board {
       let down = events.is_key_held(Keycode::S) && player_can_drop;
       let left = events.is_key_held(Keycode::A) && player_can_slide;
       let right = events.is_key_held(Keycode::D) && player_can_slide;
+      let rotate = events.is_key_pressed(Keycode::J);
 
-      if down {
-        transform_piece(piece, Transform::Down, &mut self.tilemap);
-        self.drop_timeout.reset(); // reset the computer drop timeout
-        piece.player_drop_cooldown.reset(); // reset the player drop cooldown
-      }
-      if left {
-        transform_piece(piece, Transform::Left, &mut self.tilemap);
-        piece.player_slide_cooldown.reset(); // reset the player slide cooldown
-      }
-      if right {
-        transform_piece(piece, Transform::Right, &mut self.tilemap);
-        piece.player_slide_cooldown.reset(); // reset the player slide cooldown
-      }
+      println!("{}", player_can_slide);
 
       // rotate
-      if events.is_key_pressed(Keycode::J) {
+      if rotate {
         rotate_piece(piece, &mut self.tilemap);
+        board_event = BoardEvent::Rotate;
+      }
+
+      // slide
+      if left {
+        println!("left");
+        transform_piece(piece, Transform::Left, &mut self.tilemap);
+        piece.player_slide_cooldown.restart(); // reset the player slide cooldown
+        board_event = BoardEvent::MoveLeft;
+      }
+      if right {
+        println!("right");
+        transform_piece(piece, Transform::Right, &mut self.tilemap);
+        piece.player_slide_cooldown.restart(); // reset the player slide cooldown
+        board_event = BoardEvent::MoveRight;
+      }
+
+      // move down
+      if down {
+        if transform_piece(piece, Transform::Down, &mut self.tilemap) == PieceState::Landed {
+          board_event = BoardEvent::Land;
+        }
+        self.drop_timeout.reset(); // reset the computer drop timeout
+        piece.player_drop_cooldown.restart(); // reset the player drop cooldown
       }
 
       write_piece(piece, &mut self.tilemap); // write the new piece
     }
+
+    return board_event;
   }
 
   /// Checks if the current `piece` has landed
@@ -119,6 +146,12 @@ impl Board {
 
     write_piece(&piece, &mut self.tilemap);
     self.piece = Some(piece);
+    self.drop_timeout.reset();
+  }
+
+  /// Set the `Piece` to `None`
+  pub fn kill_piece(&mut self) {
+    self.piece = None;
   }
 
   /// Transform tiles on lines above `line` by {0, 1}
