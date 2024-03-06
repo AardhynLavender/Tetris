@@ -83,6 +83,10 @@ impl Transform {
   }
 }
 
+fn above_bounds(coordinate: &Coordinate) -> bool {
+  coordinate.y < 0
+}
+
 #[derive(PartialEq, Debug)]
 pub enum TransformResult {
   /// The piece can be transformed.
@@ -108,7 +112,7 @@ fn evaluate_transform(piece: &Piece, event: Transform, tilemap: &Tilemap) -> Tra
 
   // check bounds
   let is_bound = unchecked_coordinates.iter()
-    .all(|c| tilemap.is_bound(c));
+    .all(|c| above_bounds(c) || tilemap.is_bound(c));
   if !is_bound {
     let on_bottom = unchecked_coordinates.iter()
       .any(|c| c.y >= tilemap.dimensions.y as i32 - 1);
@@ -173,7 +177,7 @@ fn evaluate_rotation(piece: &Piece, tilemap: &Tilemap) -> RotationResult {
 
   // check bounds
   let is_bound = unchecked_coordinates.iter()
-    .all(|c| tilemap.is_bound(c));
+    .all(|c| above_bounds(c) || tilemap.is_bound(c));
   if !is_bound {
     return RotationResult::Collision;
   }
