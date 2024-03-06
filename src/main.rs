@@ -19,6 +19,7 @@ mod constants;
 mod piece;
 mod board;
 mod math;
+mod algorithm;
 
 struct Tetris {
   level: u32,

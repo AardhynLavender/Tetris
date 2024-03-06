@@ -1,9 +1,10 @@
+use crate::algorithm::{check_bounds, check_shape_collision, get_new_shape_coordinates, is_shape_on_bottom, transform_shape};
 use crate::application::tile::{tile::TileData, tilemap::Tilemap};
 use crate::application::tile::tileset::Tileset;
 use crate::application::time::Timer;
 use crate::application::utility::types::Coordinate;
 use crate::constants::game::{PLAYER_DROP_COOLDOWN, PLAYER_SLIDE_COOLDOWN};
-use crate::constants::piece::{DEFAULT_ROTATION, ShapeData, ShapeType};
+use crate::constants::piece::{DEFAULT_ROTATION, Shape, ShapeData, ShapeType};
 
 const SPAWN_OFFSET_X: i32 = 4; // center the piece on the board.rs
 
@@ -83,10 +84,6 @@ impl Transform {
   }
 }
 
-fn above_bounds(coordinate: &Coordinate) -> bool {
-  coordinate.y < 0
-}
-
 #[derive(PartialEq, Debug)]
 pub enum TransformResult {
   /// The piece can be transformed.
@@ -97,26 +94,20 @@ pub enum TransformResult {
   Land,
 }
 
-fn evaluate_transform(piece: &Piece, event: Transform, tilemap: &Tilemap) -> TransformResult {
+/// Check if the piece can be transformed
+fn evaluate_transform(piece: &Piece, transform: Transform, tilemap: &Tilemap) -> TransformResult {
   let shape = &piece.shape_data[piece.rotation];
-  let coordinate = event.to_coordinate();
-  let new_position = Coordinate::new(piece.position.x + coordinate.x, piece.position.y + coordinate.y);
-  let new_shape: Vec<Coordinate> = shape.iter()
-    .map(|coord| Coordinate::new(coord.x + new_position.x, coord.y + new_position.y))
-    .collect();
-
-  // coordinates that are not part of the piece's shape
-  let unchecked_coordinates: Vec<_> = new_shape.iter()
-    .filter(|coord| !shape.contains(coord))
-    .collect();
+  let transform_coord = transform.to_coordinate();
+  let new_position = Coordinate::new(piece.position.x + transform_coord.x, piece.position.y + transform_coord.y);
+  let new_shape = transform_shape(&shape, &new_position);
 
   // check bounds
-  let is_bound = unchecked_coordinates.iter()
-    .all(|c| above_bounds(c) || tilemap.is_bound(c));
+  let unchecked_coordinates: Shape = get_new_shape_coordinates(shape, &new_shape);
+  let is_bound = check_bounds(&unchecked_coordinates, tilemap);
+
   if !is_bound {
-    let on_bottom = unchecked_coordinates.iter()
-      .any(|c| c.y >= tilemap.dimensions.y as i32 - 1);
-    if event == Transform::Down && on_bottom {
+    let on_bottom = is_shape_on_bottom(&unchecked_coordinates, tilemap);
+    if transform == Transform::Down && on_bottom {
       // if we're moving down and out of bounds, we've landed
       return TransformResult::Land;
     }
@@ -124,11 +115,10 @@ fn evaluate_transform(piece: &Piece, event: Transform, tilemap: &Tilemap) -> Tra
   }
 
   // check shape collision
-  let is_collision = unchecked_coordinates.iter()
-    .any(|c| tilemap.is_occupied(c));
+  let is_collision = check_shape_collision(&unchecked_coordinates, tilemap);
   if is_collision {
     // if we're moving down and there's a collision, we've landed
-    if event == Transform::Down {
+    if transform == Transform::Down {
       return TransformResult::Land;
     }
     return TransformResult::Collision;
@@ -137,6 +127,7 @@ fn evaluate_transform(piece: &Piece, event: Transform, tilemap: &Tilemap) -> Tra
   TransformResult::Success { position: new_position }
 }
 
+/// Apply the transform to the piece if possible
 pub fn transform_piece(piece: &mut Piece, event: Transform, tilemap: &mut Tilemap) -> PieceState {
   match evaluate_transform(piece, event, tilemap) {
     TransformResult::Success { position } => {
@@ -163,28 +154,26 @@ pub enum RotationResult {
   Collision,
 }
 
+/// Check if the piece can be rotated
 fn evaluate_rotation(piece: &Piece, tilemap: &Tilemap) -> RotationResult {
   let shape = &piece.shape_data[piece.rotation];
   let shape_rotations = piece.shape_type.data().shape;
-  let new_rotation = (piece.rotation + 1) % shape_rotations.len();
-  let new_shape = &shape_rotations[new_rotation].iter()
-    .map(|coord| Coordinate::new(coord.x + piece.position.x, coord.y + piece.position.y))
-    .collect::<Vec<Coordinate>>();
 
-  let unchecked_coordinates: Vec<_> = new_shape.iter()
-    .filter(|coord| !shape.contains(coord))
+  // get new shape
+  let new_rotation = (piece.rotation + 1) % shape_rotations.len();
+  let new_shape: Shape = shape_rotations[new_rotation].iter()
+    .map(|coord| Coordinate::new(coord.x + piece.position.x, coord.y + piece.position.y))
     .collect();
 
   // check bounds
-  let is_bound = unchecked_coordinates.iter()
-    .all(|c| above_bounds(c) || tilemap.is_bound(c));
+  let unchecked_coordinates: Shape = get_new_shape_coordinates(&shape, &new_shape);
+  let is_bound = check_bounds(&unchecked_coordinates, tilemap);
   if !is_bound {
     return RotationResult::Collision;
   }
 
   // check shape collision
-  let is_collision = unchecked_coordinates.iter()
-    .any(|c| tilemap.is_occupied(c));
+  let is_collision = check_shape_collision(&unchecked_coordinates, tilemap);
   if is_collision {
     return RotationResult::Collision;
   }
@@ -194,6 +183,7 @@ fn evaluate_rotation(piece: &Piece, tilemap: &Tilemap) -> RotationResult {
   }
 }
 
+/// Apply the rotation to the piece if possible
 pub fn rotate_piece(piece: &mut Piece, tilemap: &mut Tilemap) -> PieceState {
   if let RotationResult::Success { rotation } = evaluate_rotation(piece, tilemap) {
     piece.rotation = rotation;

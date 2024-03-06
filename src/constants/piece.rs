@@ -124,7 +124,9 @@ const Z_PIECE: RawPieceData = &[
   ],
 ];
 
-pub type ShapeData = Vec<Vec<Coordinate>>;
+pub type Shape = Vec<Coordinate>;
+
+pub type ShapeData = Vec<Shape>;
 
 const TILE_SYMBOL: char = '#';
 
