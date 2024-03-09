@@ -3,6 +3,9 @@ use std::time::Duration;
 
 use sdl2::keyboard::Keycode;
 
+use crate::constants::board::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_COLOR, BORDER_MARGIN, TILE_PIECE_MARGIN};
+use crate::constants::game::START_TETRIS_LEVEL;
+use crate::constants::piece::ShapeType;
 use crate::engine::event::EventStore;
 use crate::engine::geometry::{Rec2, Vec2};
 use crate::engine::render::Renderer;
@@ -11,9 +14,7 @@ use crate::engine::tile::tilemap::Tilemap;
 use crate::engine::tile::tileset::Tileset;
 use crate::engine::time::{Repeat, Timeout};
 use crate::engine::utility::types::{Coordinate, Size2};
-use crate::constants::board::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_COLOR, BORDER_MARGIN, TILE_PIECE_MARGIN};
-use crate::constants::game::FALL_COOLDOWN;
-use crate::constants::piece::ShapeType;
+use crate::math::calculate_speed_ms;
 use crate::piece::{erase_piece, Piece, PieceState, rotate_piece, Transform, transform_piece, write_piece};
 
 pub enum SpawnState {
@@ -44,9 +45,11 @@ impl Board {
 
     let border = Vec2::new(w * tiles_x + BORDER_MARGIN + TILE_PIECE_MARGIN, h * tiles_y + BORDER_MARGIN + TILE_PIECE_MARGIN);
 
+    let staring_fall_speed = calculate_speed_ms(START_TETRIS_LEVEL).expect("failed to calculate starting fall speed");
+
     Self {
       piece: None,
-      drop_timeout: Timeout::new(FALL_COOLDOWN, Repeat::Forever),
+      drop_timeout: Timeout::new(Duration::from_millis(staring_fall_speed), Repeat::Forever),
       tilemap,
       border,
     }

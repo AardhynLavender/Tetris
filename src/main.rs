@@ -80,7 +80,7 @@ fn setup(assets: &AssetManager) -> Tetris {
     RGBA::new(255, 255, 255, 255),
   ).expect("failed to build text");
   let level_text = Text::new(
-    String::from("level: 000001"),
+    String::from(format!("level {:0>7}", START_TETRIS_LEVEL)),
     RGBA::new(255, 255, 255, 255),
   ).expect("failed to build text");
 
