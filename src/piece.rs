@@ -1,8 +1,8 @@
 use crate::algorithm::{check_bounds, check_shape_collision, get_new_shape_coordinates, is_shape_on_bottom, transform_shape};
-use crate::application::tile::{tile::TileData, tilemap::Tilemap};
-use crate::application::tile::tileset::Tileset;
-use crate::application::time::Timer;
-use crate::application::utility::types::Coordinate;
+use crate::engine::tile::{tile::TileData, tilemap::Tilemap};
+use crate::engine::tile::tileset::Tileset;
+use crate::engine::time::Timer;
+use crate::engine::utility::types::Coordinate;
 use crate::constants::game::{PLAYER_DROP_COOLDOWN, PLAYER_SLIDE_COOLDOWN};
 use crate::constants::piece::{DEFAULT_ROTATION, Shape, ShapeData, ShapeType};
 

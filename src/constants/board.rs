@@ -1,7 +1,7 @@
-use crate::application::geometry::Vec2;
-use crate::application::render::color::color;
-use crate::application::render::color::RGBA;
-use crate::application::utility::types::{Size, Size2};
+use crate::engine::geometry::Vec2;
+use crate::engine::render::color::color;
+use crate::engine::render::color::RGBA;
+use crate::engine::utility::types::{Size, Size2};
 use crate::constants::window::SCREEN_PIXELS;
 
 pub const TILE_SIZE: Size = 8;

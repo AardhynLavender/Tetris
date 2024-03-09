@@ -1,5 +1,5 @@
-use crate::application::geometry::Vec2;
-use crate::application::render::color::{color, RGBA};
+use crate::engine::geometry::Vec2;
+use crate::engine::render::color::{color, RGBA};
 
 pub const TITLE: &str = "Tetris";
 pub const SCREEN_COLOR: RGBA = color::MANTLE;

@@ -1,12 +1,12 @@
 use std::hash::Hash;
 use std::rc::Rc;
 
-use crate::application::geometry::Vec2;
-use crate::application::structure::store::Store;
-use crate::application::tile::tile::{Tile, TileData};
-use crate::application::tile::tileset::Tileset;
-use crate::application::utility::container::{coordinate_to_index, index_to_coordinate};
-use crate::application::utility::types::{Coordinate, Size2};
+use crate::engine::geometry::Vec2;
+use crate::engine::structure::store::Store;
+use crate::engine::tile::tile::{Tile, TileData};
+use crate::engine::tile::tileset::Tileset;
+use crate::engine::utility::container::{coordinate_to_index, index_to_coordinate};
+use crate::engine::utility::types::{Coordinate, Size2};
 
 // Store //
 

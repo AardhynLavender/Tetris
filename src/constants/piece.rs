@@ -1,6 +1,6 @@
-use crate::application::tile::tile::TileId;
-use crate::application::utility::random::random;
-use crate::application::utility::types::Coordinate;
+use crate::engine::tile::tile::TileId;
+use crate::engine::utility::random::random;
+use crate::engine::utility::types::Coordinate;
 
 type RawPieceData = &'static [&'static [&'static str]];
 

@@ -5,8 +5,8 @@ use sdl2::render::{TextureCreator, TextureQuery};
 use sdl2::surface::Surface;
 use sdl2::video::WindowContext;
 
-use crate::application::geometry::{Rec2, Vec2};
-use crate::application::structure::store::HeapStore;
+use crate::engine::geometry::{Rec2, Vec2};
+use crate::engine::structure::store::HeapStore;
 
 pub type TextureStore = HeapStore<Texture>;
 

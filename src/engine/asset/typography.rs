@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use sdl2::ttf::{Font, Sdl2TtfContext};
 
-use crate::application::structure::store::HeapStore;
+use crate::engine::structure::store::HeapStore;
 
 pub type TypefaceStore<'ttf, 'f> = HeapStore<Font<'ttf, 'f>>;
 

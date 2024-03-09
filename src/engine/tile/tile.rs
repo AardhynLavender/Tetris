@@ -1,5 +1,5 @@
-use crate::application::asset::texture::SrcRect;
-use crate::application::geometry::Vec2;
+use crate::engine::asset::texture::SrcRect;
+use crate::engine::geometry::Vec2;
 
 pub type TileId = u32;
 

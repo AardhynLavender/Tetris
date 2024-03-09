@@ -1,11 +1,10 @@
 use sdl2::ttf::Sdl2TtfContext;
 
-use crate::application::asset::audio::{AudioPlayer, SoundType};
-use crate::application::asset::texture::{TextureLoader, TextureStore};
-use crate::application::asset::typography::TypefaceLoader;
-use crate::application::tile::tileset::TilesetStore;
-
-// Static immutable game assets //
+use crate::engine::asset::audio::{AudioPlayer, SoundType};
+use crate::engine::asset::texture::{TextureLoader, TextureStore};
+use crate::engine::asset::typography::TypefaceLoader;
+use crate::engine::render::Renderer;
+use crate::engine::tile::tileset::TilesetStore;
 
 pub enum AssetType {
   Texture,
@@ -21,12 +20,12 @@ pub struct AssetManager<'ttf> {
 }
 
 impl<'ttf> AssetManager<'ttf> {
-  pub fn new(textures: TextureLoader, audio: AudioPlayer, ttf_context: &'ttf Sdl2TtfContext) -> Self {
+  pub fn new(renderer: &Renderer, ttf_context: &'ttf Sdl2TtfContext) -> Self {
     Self {
-      textures,
-      audio,
+      textures: TextureLoader::new(renderer.new_texture_creator()),
+      audio: AudioPlayer::new(),
       tilesets: TilesetStore::new(),
-      typefaces: TypefaceLoader::new(ttf_context),
+      typefaces: TypefaceLoader::new(&ttf_context),
     }
   }
 
@@ -42,5 +41,3 @@ impl<'ttf> AssetManager<'ttf> {
     (&self.textures.use_store(), &self.audio, &mut self.tilesets)
   }
 }
-
-// Runtime mutable game assets //

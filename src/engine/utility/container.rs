@@ -1,4 +1,4 @@
-use crate::application::utility::types::{Coordinate, Size2};
+use crate::engine::utility::types::{Coordinate, Size2};
 
 pub fn coordinate_to_index(position: &Coordinate, dimensions: Size2) -> usize {
   (dimensions.x as i32 * position.y + position.x) as usize

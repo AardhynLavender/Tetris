@@ -3,14 +3,14 @@ use std::time::Duration;
 
 use sdl2::keyboard::Keycode;
 
-use crate::application::event::EventStore;
-use crate::application::geometry::{Rec2, Vec2};
-use crate::application::render::Renderer;
-use crate::application::tile::tile::TileData;
-use crate::application::tile::tilemap::Tilemap;
-use crate::application::tile::tileset::Tileset;
-use crate::application::time::{Repeat, Timeout};
-use crate::application::utility::types::{Coordinate, Size2};
+use crate::engine::event::EventStore;
+use crate::engine::geometry::{Rec2, Vec2};
+use crate::engine::render::Renderer;
+use crate::engine::tile::tile::TileData;
+use crate::engine::tile::tilemap::Tilemap;
+use crate::engine::tile::tileset::Tileset;
+use crate::engine::time::{Repeat, Timeout};
+use crate::engine::utility::types::{Coordinate, Size2};
 use crate::constants::board::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_COLOR, BORDER_MARGIN, TILE_PIECE_MARGIN};
 use crate::constants::game::FALL_COOLDOWN;
 use crate::constants::piece::ShapeType;

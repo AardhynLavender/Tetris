@@ -2,8 +2,8 @@ use std::rc::Rc;
 
 use sdl2::ttf::Font;
 
-use crate::application::asset::texture::{Texture, TextureLoader};
-use crate::application::render::color::RGBA;
+use crate::engine::asset::texture::{Texture, TextureLoader};
+use crate::engine::render::color::RGBA;
 
 pub struct Text {
   content: String,

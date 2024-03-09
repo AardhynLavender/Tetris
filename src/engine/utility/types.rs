@@ -1,4 +1,4 @@
-use crate::application::geometry::Vec2;
+use crate::engine::geometry::Vec2;
 
 pub type Size = u32; // todo: consider using usize?
 

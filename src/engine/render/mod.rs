@@ -5,11 +5,11 @@ use sdl2::rect::{Point, Rect};
 use sdl2::render::TextureCreator;
 use sdl2::video::WindowContext;
 
-use crate::application::asset::texture::{SrcRect, Texture};
-use crate::application::geometry::{
+use crate::engine::asset::texture::{SrcRect, Texture};
+use crate::engine::geometry::{
   Cir2, IntConvertable, Line2, Pol2, Ray2, Rec2, SizePrimitive, UnitPrimitive, Vec2,
 };
-use crate::application::render::color::RGBA;
+use crate::engine::render::color::RGBA;
 
 pub mod color;
 pub mod text;
