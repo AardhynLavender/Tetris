@@ -1,6 +1,6 @@
 use sdl2::pixels::Color;
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct RGBA {
   pub red: u8,
   pub green: u8,

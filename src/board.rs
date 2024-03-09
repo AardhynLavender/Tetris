@@ -5,14 +5,13 @@ use sdl2::keyboard::Keycode;
 
 use crate::application::event::EventStore;
 use crate::application::geometry::{Rec2, Vec2};
-use crate::application::render::color::color;
 use crate::application::render::Renderer;
 use crate::application::tile::tile::TileData;
 use crate::application::tile::tilemap::Tilemap;
 use crate::application::tile::tileset::Tileset;
 use crate::application::time::{Repeat, Timeout};
 use crate::application::utility::types::{Coordinate, Size2};
-use crate::constants::board::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_MARGIN, TILE_PIECE_MARGIN};
+use crate::constants::board::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_COLOR, BORDER_MARGIN, TILE_PIECE_MARGIN};
 use crate::constants::game::FALL_COOLDOWN;
 use crate::constants::piece::ShapeType;
 use crate::piece::{erase_piece, Piece, PieceState, rotate_piece, Transform, transform_piece, write_piece};
@@ -65,7 +64,7 @@ impl Board {
     // draw border
     let border_position = Vec2::new(self.tilemap.position.x - BORDER_MARGIN as i32, self.tilemap.position.y - BORDER_MARGIN as i32);
     let rect = Rec2::new(border_position, self.border);
-    renderer.draw_rect(rect, color::SURFACE_0);
+    renderer.draw_rect(rect, BORDER_COLOR);
   }
 
   pub fn update(&mut self, events: &EventStore) -> BoardEvent {
