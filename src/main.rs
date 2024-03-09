@@ -11,7 +11,7 @@ use crate::engine::event::EventStore;
 use crate::engine::geometry::{Rec2, Vec2};
 use crate::engine::manager::assets::{AssetManager, AssetType};
 use crate::engine::render::{Properties, Renderer};
-use crate::engine::render::color::RGBA;
+use crate::engine::render::color::color;
 use crate::engine::render::text::Text;
 use crate::engine::tile::tileset::Tileset;
 use crate::engine::time::{ConsumeAction, Timer};
@@ -73,15 +73,15 @@ fn setup(assets: &AssetManager) -> Tetris {
 
   let score_text = Text::new(
     String::from("score 0000000"),
-    RGBA::new(255, 255, 255, 255),
+    color::TEXT,
   ).expect("failed to build text");
   let lines_text = Text::new(
     String::from("lines 0000000"),
-    RGBA::new(255, 255, 255, 255),
+    color::TEXT,
   ).expect("failed to build text");
   let level_text = Text::new(
     String::from(format!("level {:0>7}", START_TETRIS_LEVEL)),
-    RGBA::new(255, 255, 255, 255),
+    color::TEXT,
   ).expect("failed to build text");
 
   Tetris {
@@ -106,15 +106,16 @@ fn render(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
     .get("typeface")
     .expect("failed to fetch typeface");
 
+  renderer.draw_rect(Rec2::new(Vec2::new(99, 8), Vec2::new(83u32, 31u32)), BORDER_COLOR);
+
   let st_texture = Rc::new(state.score_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
-  renderer.draw_texture(&st_texture, Vec2::new(100, 8));
-  renderer.draw_rect(Rec2::new(Vec2::new(99, 8), Vec2::new(100u32, 10u32)), BORDER_COLOR);
+  renderer.draw_texture(&st_texture, Vec2::new(102, 10));
 
   let lt_texture = Rc::new(state.lines_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
-  renderer.draw_texture(&lt_texture, Vec2::new(100, 18));
+  renderer.draw_texture(&lt_texture, Vec2::new(102, 20));
 
   let lv_texture = Rc::new(state.level_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
-  renderer.draw_texture(&lv_texture, Vec2::new(100, 28));
+  renderer.draw_texture(&lv_texture, Vec2::new(102, 30));
 }
 
 fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
@@ -139,7 +140,7 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
       let lines_cleared = state.lines_to_clear.len() as u32;
       if lines_cleared > 0 {
         state.lines += lines_cleared;
-        state.lines_text.set_content(format!("LINES {:0>3}", state.lines)).expect("failed to set content");
+        state.lines_text.set_content(format!("LINES {:0>7}", state.lines)).expect("failed to set content");
 
         if let clear_line_sfx = determine_sfx(lines_cleared).expect("failed to determine sfx") {
           assets.audio.play(clear_line_sfx, 24, Loop::Once).expect("failed to play sound effect");
@@ -175,12 +176,12 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
       // calculate score
       let points = calculate_score(lines_cleared, state.level).expect("failed to calculate score");
       state.score += points;
-      state.score_text.set_content(format!("SCORE {:0>6}", state.score)).expect("failed to set content");
+      state.score_text.set_content(format!("SCORE {:0>7}", state.score)).expect("failed to set content");
 
       // check level advance
       if state.lines >= state.level * LINES_PER_LEVEL {
         state.level += 1;
-        state.level_text.set_content(format!("LEVEL {:0>6}", state.level)).expect("failed to set content");
+        state.level_text.set_content(format!("LEVEL {:0>7}", state.level)).expect("failed to set content");
 
         if (state.level <= MAX_TETRIS_LEVEL) {
           let new_speed = calculate_speed_ms(state.level).expect("failed to calculate speed");

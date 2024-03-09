@@ -55,6 +55,8 @@ pub mod color {
   pub const SAPPHIRE: RGBA = RGBA::new(116, 199, 236, OPAQUE);
   pub const BLUE: RGBA = RGBA::new(137, 180, 250, OPAQUE);
   pub const LAVENDER: RGBA = RGBA::new(180, 190, 254, OPAQUE);
+
+  pub const TEXT: RGBA = RGBA::new(205, 214, 244, OPAQUE);
   pub const SURFACE_0: RGBA = RGBA::new(49, 50, 68, OPAQUE);
   pub const MANTLE: RGBA = RGBA::new(24, 24, 37, OPAQUE);
 
