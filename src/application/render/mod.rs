@@ -12,6 +12,7 @@ use crate::application::geometry::{
 use crate::application::render::color::RGBA;
 
 pub mod color;
+pub mod text;
 
 #[derive(Clone)]
 pub struct Properties {

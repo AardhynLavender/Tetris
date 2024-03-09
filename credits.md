@@ -25,6 +25,10 @@ Korobeiniki ("A-Type"), arranged by Hirokazu Tanaka
 
 Hirokazu Tanaka
 
+## Typography
+
+QuinqureFive by GGBotNet
+
 ## Art
 
 Aardhyn Lavender

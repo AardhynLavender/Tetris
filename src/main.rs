@@ -1,15 +1,19 @@
 use std::rc::Rc;
 
-use crate::application::Application;
-use crate::application::asset::audio::{Loop, SoundType};
-use crate::application::event::EventStore;
-use crate::application::geometry::Vec2;
+use sdl2::Sdl;
+
+use crate::application::asset::audio::{AudioPlayer, Loop, SoundType};
+use crate::application::asset::texture::TextureLoader;
+use crate::application::event::{Events, EventStore};
+use crate::application::geometry::{Rec2, Vec2};
 use crate::application::manager::assets::{AssetManager, AssetType};
 use crate::application::render::{Properties, Renderer};
+use crate::application::render::color::RGBA;
+use crate::application::render::text::Text;
 use crate::application::tile::tileset::Tileset;
 use crate::application::time::{ConsumeAction, Timer};
 use crate::board::{Board, BoardEvent};
-use crate::constants::board::TILE_SIZE;
+use crate::constants::board::{BORDER_COLOR, TILE_SIZE};
 use crate::constants::game::{CLEAR_COOLDOWN, LINES_PER_LEVEL, MAX_TETRIS_LEVEL, SPAWN_COOLDOWN, START_TETRIS_LEVEL};
 use crate::constants::window::{SCREEN_COLOR, SCREEN_PIXELS, TITLE, WINDOW_DIMENSIONS};
 use crate::math::{calculate_score, calculate_speed_ms, determine_sfx};
@@ -28,11 +32,131 @@ struct Tetris {
   spawn_cooldown: Timer,
   drop_cooldown: Timer,
   lines_to_clear: Vec<usize>,
+  score_text: Text,
+  lines_text: Text,
+  level_text: Text,
   board: Board,
 }
 
-pub fn main() -> Result<(), ()> {
-  Application::new(Properties {
+struct Game<'a, 'b> {
+  events: Events,
+  state: Option<Tetris>,
+  actions: Actions,
+  event_store: EventStore,
+  renderer: &'a mut Renderer,
+  assets: &'a mut AssetManager<'b>,
+}
+
+struct Actions {
+  render: fn(&mut Tetris, &AssetManager, &mut Renderer),
+  update: fn(&EventStore, &AssetManager, &mut Tetris),
+}
+
+impl<'a, 'b> Game<'a, 'b> {
+  fn new(context: &'a Sdl, renderer: &'a mut Renderer, assets: &'a mut AssetManager<'b>, actions: Actions) -> Self {
+    let mut events = Events::new(&context);
+    let mut event_store = EventStore::new();
+
+    Self {
+      events,
+      actions,
+      state: None,
+      event_store,
+      renderer,
+      assets,
+    }
+  }
+
+  fn setup(&mut self) {
+    let tileset = self.assets.tilesets.get("spritesheet").expect("failed to fetch tileset");
+
+    // create board
+    let mut board = Board::new(tileset);
+
+    // spawn first piece
+    board.spawn_piece();
+
+    // start music
+    self.assets.audio.play("korobeiniki", 8, Loop::Forever).expect("failed to play music");
+
+    let score_text = Text::new(
+      String::from("score 0000000"),
+      RGBA::new(255, 255, 255, 255),
+    ).expect("failed to build text");
+    let lines_text = Text::new(
+      String::from("lines 0000000"),
+      RGBA::new(255, 255, 255, 255),
+    ).expect("failed to build text");
+    let level_text = Text::new(
+      String::from("level: 000001"),
+      RGBA::new(255, 255, 255, 255),
+    ).expect("failed to build text");
+
+    self.state = Some(
+      Tetris {
+        level: START_TETRIS_LEVEL,
+        score: 0,
+        lines: 0,
+        spawn_cooldown: Timer::new(SPAWN_COOLDOWN, false),
+        drop_cooldown: Timer::new(CLEAR_COOLDOWN, false),
+        lines_to_clear: Vec::new(),
+        score_text,
+        lines_text,
+        level_text,
+        board,
+      });
+  }
+
+  pub fn run(&mut self) -> Result<(), &str> {
+    self.load();
+    self.setup();
+
+    let mut state = self.state.take().expect("failed to take state");
+
+    loop {
+      self.events.update(&mut self.event_store);
+      if self.events.is_quit {
+        break;
+      }
+
+      (self.actions.update)(&self.event_store, &self.assets, &mut state);
+      (self.actions.render)(&mut state, &self.assets, &mut self.renderer);
+
+      self.renderer.present();
+    }
+
+    Ok(())
+  }
+
+  fn load(&mut self) {
+    self.assets.load(AssetType::Texture, String::from("asset/spritesheet.png")).expect("failed to load texture");                                    // spritesheet
+
+    self.assets.load(AssetType::Typeface { font_size: 5 }, String::from("asset/typeface.ttf")).expect("failed to load typeface");                   // pixel font
+
+    self.assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/level.ogg")).expect("failed to load sound effect");     // level advance
+    self.assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/line.ogg")).expect("failed to load sound effect");      // line clear
+    self.assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/tetris.ogg")).expect("failed to load sound effect");    // tetris clear
+    self.assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/shift.ogg")).expect("failed to load sound effect");     // line shift
+    self.assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/move.ogg")).expect("failed to load sound effect");      // piece transform
+    self.assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/rotate.ogg")).expect("failed to load sound effect");    // piece rotation
+    self.assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/land.ogg")).expect("failed to load sound effect");      // piece land
+    self.assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/pause.ogg")).expect("failed to load sound effect");     // game pause
+    self.assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/gameover.ogg")).expect("failed to load sound effect");  // game over
+    self.assets.load(AssetType::Audio { sound_type: SoundType::Music }, String::from("asset/korobeiniki.ogg")).expect("failed to load music");       // tetris theme
+
+    // create tileset
+    let (textures, _, tilesets) = self.assets.use_store();
+    let texture = textures.get("spritesheet").expect("failed to fetch texture for building assets");
+    tilesets.add(String::from("spritesheet"), Rc::new(Tileset::new(texture.clone(), Vec2::new(TILE_SIZE, TILE_SIZE))));
+  }
+}
+
+pub fn main() -> Result<(), &'static str> {
+  let context = sdl2::init().expect("failed to initialize SDL2");
+  context.audio().expect("failed to initialize audio");
+  let ttf_context = sdl2::ttf::init().expect("failed to initialize ttf context");
+
+  let properties = Properties {
     title: String::from(TITLE),
     dimensions: WINDOW_DIMENSIONS,
     logical: Some(SCREEN_PIXELS),
@@ -43,58 +167,48 @@ pub fn main() -> Result<(), ()> {
     software_acceleration: false,
     hardware_acceleration: true,
     screen_color: SCREEN_COLOR,
-  })
-    .on_load_assets(handle_load_resources)
-    .on_start(handle_start)
-    .on_update(handle_update)
-    .on_render(handle_render)
-    .run()
+  };
+
+  let mut renderer = Renderer::new(&context, properties);
+
+  let texture_loader = TextureLoader::new(renderer.new_texture_creator());
+  let audio_player = AudioPlayer::new();
+  let mut assets = AssetManager::new(texture_loader, audio_player, &ttf_context);
+
+  let mut game = Game::new(
+    &context,
+    &mut renderer,
+    &mut assets,
+    Actions {
+      render,
+      update,
+    });
+
+  game.run().expect("failed to run game");
+
+  Ok(())
 }
 
-fn handle_load_resources(assets: &mut AssetManager) {
-  assets.load(AssetType::Texture, String::from("asset/spritesheet.png")).expect("failed to load texture");                                    // spritesheet
+fn render(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
+  state.board.render(renderer);
 
-  assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/level.ogg")).expect("failed to load sound effect");     // level advance
-  assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/line.ogg")).expect("failed to load sound effect");      // line clear
-  assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/tetris.ogg")).expect("failed to load sound effect");    // tetris clear
-  assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/shift.ogg")).expect("failed to load sound effect");     // line shift
-  assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/move.ogg")).expect("failed to load sound effect");      // piece transform
-  assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/rotate.ogg")).expect("failed to load sound effect");    // piece rotation
-  assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/land.ogg")).expect("failed to load sound effect");      // piece land
-  assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/pause.ogg")).expect("failed to load sound effect");     // game pause
-  assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/gameover.ogg")).expect("failed to load sound effect");  // game over
-  assets.load(AssetType::Audio { sound_type: SoundType::Music }, String::from("asset/korobeiniki.ogg")).expect("failed to load music");       // tetris theme
+  let typeface = assets.typefaces
+    .use_store()
+    .get("typeface")
+    .expect("failed to fetch typeface");
 
-  // create tileset
-  let (textures, ..) = assets.use_store();
-  let texture = textures.get("spritesheet").expect("failed to fetch texture for building assets");
-  assets.tilesets.add(String::from("spritesheet"), Rc::new(Tileset::new(texture.clone(), Vec2::new(TILE_SIZE, TILE_SIZE))));
+  let st_texture = Rc::new(state.score_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
+  renderer.draw_texture(&st_texture, Vec2::new(100, 8));
+  renderer.draw_rect(Rec2::new(Vec2::new(99, 8), Vec2::new(100u32, 10u32)), BORDER_COLOR);
+
+  let lt_texture = Rc::new(state.lines_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
+  renderer.draw_texture(&lt_texture, Vec2::new(100, 18));
+
+  let lv_texture = Rc::new(state.level_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
+  renderer.draw_texture(&lv_texture, Vec2::new(100, 28));
 }
 
-fn handle_start(assets: &AssetManager) -> Tetris {
-  let tileset = assets.tilesets.get("spritesheet").expect("failed to fetch tileset");
-
-  // create board
-  let mut board = Board::new(tileset);
-
-  // spawn first piece
-  board.spawn_piece();
-
-  // start music
-  assets.audio.play("korobeiniki", 8, Loop::Forever).expect("failed to play music");
-
-  Tetris {
-    level: START_TETRIS_LEVEL,
-    score: 0,
-    lines: 0,
-    spawn_cooldown: Timer::new(SPAWN_COOLDOWN, false),
-    drop_cooldown: Timer::new(CLEAR_COOLDOWN, false),
-    lines_to_clear: Vec::new(),
-    board,
-  }
-}
-
-fn handle_update(events: &EventStore, assets: &AssetManager, state: &mut Tetris, _: &mut Renderer) {
+fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
   match state.board.update(events) {
     BoardEvent::MoveLeft | BoardEvent::MoveRight => {
       // play sound effect
@@ -116,6 +230,7 @@ fn handle_update(events: &EventStore, assets: &AssetManager, state: &mut Tetris,
       let lines_cleared = state.lines_to_clear.len() as u32;
       if lines_cleared > 0 {
         state.lines += lines_cleared;
+        state.lines_text.set_content(format!("LINES {:0>3}", state.lines)).expect("failed to set content");
 
         if let clear_line_sfx = determine_sfx(lines_cleared).expect("failed to determine sfx") {
           assets.audio.play(clear_line_sfx, 24, Loop::Once).expect("failed to play sound effect");
@@ -151,10 +266,13 @@ fn handle_update(events: &EventStore, assets: &AssetManager, state: &mut Tetris,
       // calculate score
       let points = calculate_score(lines_cleared, state.level).expect("failed to calculate score");
       state.score += points;
+      state.score_text.set_content(format!("SCORE {:0>6}", state.score)).expect("failed to set content");
 
       // check level advance
       if state.lines >= state.level * LINES_PER_LEVEL {
         state.level += 1;
+        state.level_text.set_content(format!("LEVEL {:0>6}", state.level)).expect("failed to set content");
+
         if (state.level <= MAX_TETRIS_LEVEL) {
           let new_speed = calculate_speed_ms(state.level).expect("failed to calculate speed");
           state.board.set_speed_ms(new_speed);
@@ -162,9 +280,6 @@ fn handle_update(events: &EventStore, assets: &AssetManager, state: &mut Tetris,
           // todo: handle beat game, good luck testing this
         }
       }
-
-      // print score
-      println!("Level: {}, Score: {}, Lines: {}", state.level, state.score, state.lines);
     }
 
     // drop sfx
@@ -178,10 +293,4 @@ fn handle_update(events: &EventStore, assets: &AssetManager, state: &mut Tetris,
   if state.spawn_cooldown.consume(ConsumeAction::Disable) {
     state.board.spawn_piece();
   }
-}
-
-fn handle_render(state: &Tetris, renderer: &mut Renderer) {
-  state.board.render(renderer);
-
-  // todo: render score, level, lines, preview, etc.
 }
