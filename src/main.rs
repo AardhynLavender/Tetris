@@ -153,6 +153,11 @@ fn render(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
   render_statistics(state, assets, renderer);
 }
 
+fn next_piece(board: &mut Board, preview_board: &mut Tilemap) {
+  let NextState { piece, preview } = board.next_piece();
+  write_preview(preview_board, preview);
+}
+
 fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
   match state.board.update(events) {
     BoardEvent::MoveLeft | BoardEvent::MoveRight => {
@@ -221,6 +226,7 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
         if (state.level <= MAX_TETRIS_LEVEL) {
           let new_speed = calculate_speed_ms(state.level).expect("failed to calculate speed");
           state.board.set_speed_ms(new_speed);
+          assets.audio.play("level", 24, Loop::Once).expect("failed to play sound effect");
         } else {
           // todo: handle beat game, good luck testing this
         }
@@ -236,8 +242,7 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
 
   // check if the spawn cooldown is done
   if state.spawn_cooldown.consume(ConsumeAction::Disable) {
-    let NextState { preview, .. } = state.board.next_piece();
-    write_preview(&mut state.preview, preview);
+    next_piece(&mut state.board, &mut state.preview);
   }
 }
 
