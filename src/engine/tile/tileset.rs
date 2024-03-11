@@ -45,7 +45,7 @@ fn make_tiles(dimensions: Size2, tile_size: Size2) -> Result<Vec<TileData>, &'st
   let mut tiles = Vec::new();
   for y in 0..width / tile_size.y {
     for x in 0..width / tile_size.x {
-      let id = (y * (width / tile_size.x) + x);
+      let id = y * (width / tile_size.x) + x;
       let tile_position = Vec2::new(x * tile_size.x, y * tile_size.y);
       let src = Rec2::new(tile_position, tile_size);
       tiles.push(TileData { id, src });

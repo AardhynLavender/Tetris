@@ -33,7 +33,7 @@ impl<'ttf> AssetManager<'ttf> {
     match asset_type {
       AssetType::Texture => self.textures.load(filepath).map(|_| ()).map_err(|_| "Failed to load texture"),
       AssetType::Audio { sound_type } => self.audio.load(sound_type, filepath),
-      AssetType::Typeface { font_size } => self.typefaces.load(filepath, font_size).map_err(|e| "Failed to load typeface")
+      AssetType::Typeface { font_size } => self.typefaces.load(filepath, font_size).map_err(|_e| "Failed to load typeface")
     }
   }
 

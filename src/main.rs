@@ -166,7 +166,7 @@ fn render(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
 }
 
 fn next_state(board: &mut Board, preview_board: &mut Tilemap) -> GameState {
-  let NextState { piece, preview, space } = board.next_piece();
+  let NextState { preview, space, .. } = board.next_piece();
   write_preview(preview_board, preview);
   if space {
     GameState::Playing
@@ -252,7 +252,7 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
             state.level += 1;
             state.level_text.set_content(format!("LEVEL {:0>7}", state.level)).expect("failed to set content");
 
-            if (state.level <= MAX_TETRIS_LEVEL) {
+            if state.level <= MAX_TETRIS_LEVEL {
               let new_speed = calculate_speed_ms(state.level).expect("failed to calculate speed");
               state.board.set_speed_ms(new_speed);
               assets.audio.play("level", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");

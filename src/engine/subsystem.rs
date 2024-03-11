@@ -14,7 +14,7 @@ impl Subsystem {
 
     let renderer = Renderer::new(&sdl_context, properties);
 
-    let mut events = Events::new(&sdl_context);
+    let events = Events::new(&sdl_context);
 
     Self {
       sdl_context,

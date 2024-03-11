@@ -1,13 +1,13 @@
 use std::rc::Rc;
 
-use num::{Num, Unsigned};
+
 use sdl2::rect::{Point, Rect};
 use sdl2::render::TextureCreator;
 use sdl2::video::WindowContext;
 
 use crate::engine::asset::texture::{SrcRect, Texture};
 use crate::engine::geometry::{
-  Cir2, IntConvertable, Line2, Pol2, Ray2, Rec2, SizePrimitive, UnitPrimitive, Vec2,
+  Cir2, IntConvertable, Line2, Pol2, Ray2, Rec2, SizePrimitive, Vec2,
 };
 use crate::engine::render::color::RGBA;
 
@@ -110,7 +110,7 @@ impl Renderer {
     self.draw_from(line.start, line.end, color);
   }
 
-  pub fn draw_ray<T: IntConvertable>(&mut self, ray: Ray2<T>, color: RGBA, max_length: T) {
+  pub fn draw_ray<T: IntConvertable>(&mut self, _ray: Ray2<T>, color: RGBA, _max_length: T) {
     self.set_color(color);
     panic!("not implemented");
   }
@@ -153,17 +153,17 @@ impl Renderer {
     }
   }
 
-  pub fn draw_poly_filled<T: IntConvertable>(&mut self, pol: Pol2<T>, outline: RGBA, fill: RGBA) {
+  pub fn draw_poly_filled<T: IntConvertable>(&mut self, _pol: Pol2<T>, outline: RGBA, _fill: RGBA) {
     self.set_color(outline);
     panic!("not implemented");
   }
 
-  pub fn draw_circle<T: IntConvertable>(&mut self, circle: Cir2<T>, color: RGBA) {
+  pub fn draw_circle<T: IntConvertable>(&mut self, _circle: Cir2<T>, color: RGBA) {
     self.set_color(color);
     panic!("not implemented");
   }
 
-  pub fn draw_circle_filled<T: IntConvertable>(&mut self, circle: Cir2<T>, outline: RGBA, fill: RGBA) {
+  pub fn draw_circle_filled<T: IntConvertable>(&mut self, _circle: Cir2<T>, _outline: RGBA, _fill: RGBA) {
     panic!("not implemented");
   }
 }

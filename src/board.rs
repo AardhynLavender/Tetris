@@ -45,7 +45,7 @@ pub struct Board {
 
 impl Board {
   pub fn new(tileset: Rc<Tileset>) -> Self {
-    let mut tilemap = Tilemap::new(Rc::clone(&tileset), BOARD_POSITION, BOARD_DIMENSIONS);
+    let tilemap = Tilemap::new(Rc::clone(&tileset), BOARD_POSITION, BOARD_DIMENSIONS);
     let (w, h) = tilemap.dimensions.destructure();
     let (tiles_x, tiles_y) = tileset.tile_size.destructure();
 

@@ -57,7 +57,7 @@ impl AudioPlayer {
   }
 
   pub fn play(&self, name: &str, volume: i32, looping: Loop) -> Result<(), String> {
-    let mut audio = self.store.get(name)?;
+    let audio = self.store.get(name)?;
     let loops = match looping {
       Loop::Forever => -1,
       Loop::Once => 0,
@@ -82,8 +82,8 @@ impl AudioPlayer {
   pub fn stop(&self, name: &str) -> Result<(), String> {
     let audio = self.store.get(name)?;
     match &audio.sound {
-      Sound::Music { data } => sdl2::mixer::Music::halt(),
-      Sound::Effect { data } => sdl2::mixer::Channel::all().halt(),
+      Sound::Music => sdl2::mixer::Music::halt(),
+      Sound::Effect => unimplemented!("Stopping sound effects is not yet implemented")
     }
     Ok(())
   }
