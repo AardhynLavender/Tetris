@@ -78,6 +78,15 @@ impl AudioPlayer {
       }
     }
   }
+
+  pub fn stop(&self, name: &str) -> Result<(), String> {
+    let audio = self.store.get(name)?;
+    match &audio.sound {
+      Sound::Music { data } => sdl2::mixer::Music::halt(),
+      Sound::Effect { data } => sdl2::mixer::Channel::all().halt(),
+    }
+    Ok(())
+  }
 }
 
 /// Samples per second

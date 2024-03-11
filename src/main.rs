@@ -1,5 +1,7 @@
 use std::rc::Rc;
 
+use sdl2::keyboard::Keycode;
+
 use crate::board::{Board, BoardEvent, NextState};
 use crate::constants::board::{BORDER_COLOR, TILE_SIZE};
 use crate::constants::game::{CLEAR_COOLDOWN, LEVEL_TEXT_POSITION, LINES_PER_LEVEL, LINES_TEXT_POSITION, MAX_TETRIS_LEVEL, MUSIC_VOLUME, NEXT_TEXT_POSITION, PREVIEW_BORDER, PREVIEW_DIMENSIONS, PREVIEW_POSITION, SCORE_TEXT_POSITION, SFX_VOLUME, SPAWN_COOLDOWN, START_TETRIS_LEVEL, STATISTICS_BORDER};
@@ -27,9 +29,18 @@ mod board;
 mod math;
 mod algorithm;
 
+#[derive(PartialEq, Clone)]
+enum GameState {
+  Playing,
+  GameOver,
+  Won,
+  Pause,
+}
+
 // state
 struct Tetris {
   board: Board,
+  game_state: GameState,
 
   preview: Tilemap,
   next_text: Rc<Texture>,
@@ -91,6 +102,7 @@ fn setup(assets: &AssetManager) -> Tetris {
     .expect("failed to fetch typeface");
 
   Tetris {
+    game_state: GameState::Playing,
     board,
     preview: preview_board,
 
@@ -148,101 +160,125 @@ fn render_statistics(state: &Tetris, assets: &AssetManager, renderer: &mut Rende
 }
 
 fn render(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
-  state.board.render(renderer);
+  state.board.render(renderer, state.game_state == GameState::Pause);
   render_preview(&state.preview, &state.next_text, renderer);
   render_statistics(state, assets, renderer);
 }
 
-fn next_piece(board: &mut Board, preview_board: &mut Tilemap) {
-  let NextState { piece, preview } = board.next_piece();
+fn next_state(board: &mut Board, preview_board: &mut Tilemap) -> GameState {
+  let NextState { piece, preview, space } = board.next_piece();
   write_preview(preview_board, preview);
+  if space {
+    GameState::Playing
+  } else {
+    GameState::GameOver
+  }
 }
 
 fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
-  match state.board.update(events) {
-    BoardEvent::MoveLeft | BoardEvent::MoveRight => {
-      // play sound effect
-      assets.audio.play("move", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
-    }
-    BoardEvent::Rotate => {
-      // play sound effect
-      assets.audio.play("rotate", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
-    }
-    BoardEvent::Land => {
-      // play sound effect
-      assets.audio.play("land", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
+  // check for pause
+  if events.is_key_pressed(Keycode::Escape) {
+    assets.audio.play("pause", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
+    state.game_state = match state.game_state {
+      GameState::Playing => GameState::Pause,
+      GameState::Pause => GameState::Playing,
+      _ => state.game_state.clone(),
+    };
+  }
 
-      // delete active piece
-      state.board.kill_piece();
+  match &state.game_state {
+    GameState::Playing => {
+      match state.board.update(events) {
+        BoardEvent::MoveLeft | BoardEvent::MoveRight => {
+          // play sound effect
+          assets.audio.play("move", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
+        }
+        BoardEvent::Rotate => {
+          // play sound effect
+          assets.audio.play("rotate", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
+        }
+        BoardEvent::Land => {
+          // play sound effect
+          assets.audio.play("land", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
 
-      // check for full lines
-      state.lines_to_clear = state.board.get_full_lines();
-      let lines_cleared = state.lines_to_clear.len() as u32;
-      if lines_cleared > 0 {
-        state.lines += lines_cleared;
-        state.lines_text.set_content(format!("LINES {:0>7}", state.lines)).expect("failed to set content");
+          // delete active piece
+          state.board.kill_piece();
 
-        if let clear_line_sfx = determine_sfx(lines_cleared).expect("failed to determine sfx") {
-          assets.audio.play(clear_line_sfx, SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
+          // check for full lines
+          state.lines_to_clear = state.board.get_full_lines();
+          let lines_cleared = state.lines_to_clear.len() as u32;
+          if lines_cleared > 0 {
+            state.lines += lines_cleared;
+            state.lines_text.set_content(format!("LINES {:0>7}", state.lines)).expect("failed to set content");
+
+            if let clear_line_sfx = determine_sfx(lines_cleared).expect("failed to determine sfx") {
+              assets.audio.play(clear_line_sfx, SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
+            }
+
+            // clear lines
+            for line in &state.lines_to_clear {
+              state.board.clear_line(*line).expect("failed to clear line");
+            }
+
+            // todo: Well, We should check if there is anything too drop and skip the first cooldown
+            // start the drop cooldown
+            state.drop_cooldown.start();
+          } else {
+            // no lines to clear, start the spawn cooldown
+            state.spawn_cooldown.start();
+          }
+        }
+        _ => {}
+      }
+
+      // check if the drop cooldown is done
+      if state.drop_cooldown.consume(ConsumeAction::Disable) {
+        // get full lines
+        let lines_cleared = state.lines_to_clear.len() as u32;
+        if lines_cleared > 0 {
+          // drop full lines
+          for line in &state.lines_to_clear {
+            state.board.move_lines_down(*line).expect("failed to clear line");
+          }
+          state.lines_to_clear.clear(); // done
+
+          // calculate score
+          let points = calculate_score(lines_cleared, state.level).expect("failed to calculate score");
+          state.score += points;
+          state.score_text.set_content(format!("SCORE {:0>7}", state.score)).expect("failed to set content");
+
+          // check level advance
+          if state.lines >= state.level * LINES_PER_LEVEL {
+            state.level += 1;
+            state.level_text.set_content(format!("LEVEL {:0>7}", state.level)).expect("failed to set content");
+
+            if (state.level <= MAX_TETRIS_LEVEL) {
+              let new_speed = calculate_speed_ms(state.level).expect("failed to calculate speed");
+              state.board.set_speed_ms(new_speed);
+              assets.audio.play("level", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
+            } else {
+              // todo: handle beat game, good luck testing this
+            }
+          }
         }
 
-        // clear lines
-        for line in &state.lines_to_clear {
-          state.board.clear_line(*line).expect("failed to clear line");
-        }
+        // drop sfx
+        assets.audio.play("shift", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
 
-        // todo: Well, We should check if there is anything too drop and skip the first cooldown
-        // start the drop cooldown
-        state.drop_cooldown.start();
-      } else {
-        // no lines to clear, start the spawn cooldown
+        // start the spawn cooldown
         state.spawn_cooldown.start();
+      }
+
+      // check if the spawn cooldown is done
+      if state.spawn_cooldown.consume(ConsumeAction::Disable) {
+        state.game_state = next_state(&mut state.board, &mut state.preview);
+        if state.game_state == GameState::GameOver {
+          assets.audio.stop("korobeiniki").expect("failed to stop music");
+          assets.audio.play("gameover", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
+        }
       }
     }
     _ => {}
-  }
-
-  // check if the drop cooldown is done
-  if state.drop_cooldown.consume(ConsumeAction::Disable) {
-    // get full lines
-    let lines_cleared = state.lines_to_clear.len() as u32;
-    if lines_cleared > 0 {
-      // drop full lines
-      for line in &state.lines_to_clear {
-        state.board.move_lines_down(*line).expect("failed to clear line");
-      }
-      state.lines_to_clear.clear(); // done
-
-      // calculate score
-      let points = calculate_score(lines_cleared, state.level).expect("failed to calculate score");
-      state.score += points;
-      state.score_text.set_content(format!("SCORE {:0>7}", state.score)).expect("failed to set content");
-
-      // check level advance
-      if state.lines >= state.level * LINES_PER_LEVEL {
-        state.level += 1;
-        state.level_text.set_content(format!("LEVEL {:0>7}", state.level)).expect("failed to set content");
-
-        if (state.level <= MAX_TETRIS_LEVEL) {
-          let new_speed = calculate_speed_ms(state.level).expect("failed to calculate speed");
-          state.board.set_speed_ms(new_speed);
-          assets.audio.play("level", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
-        } else {
-          // todo: handle beat game, good luck testing this
-        }
-      }
-    }
-
-    // drop sfx
-    assets.audio.play("shift", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
-
-    // start the spawn cooldown
-    state.spawn_cooldown.start();
-  }
-
-  // check if the spawn cooldown is done
-  if state.spawn_cooldown.consume(ConsumeAction::Disable) {
-    next_piece(&mut state.board, &mut state.preview);
   }
 }
 

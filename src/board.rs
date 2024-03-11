@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use sdl2::keyboard::Keycode;
 
+use crate::algorithm::{check_shape_collision, transform_shape};
 use crate::constants::board::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_COLOR, BORDER_MARGIN, FIRST_ROW, SPAWN_OFFSET_X, TILE_PIECE_MARGIN};
 use crate::constants::game::START_TETRIS_LEVEL;
 use crate::constants::piece::ShapeType;
@@ -17,14 +18,13 @@ use crate::engine::utility::types::{Coordinate, Size2};
 use crate::math::calculate_speed_ms;
 use crate::piece::{erase_piece, Piece, PieceState, rotate_piece, Transform, transform_piece, write_piece};
 
-pub enum SpawnState {
-  Space,
-  Occupied,
-}
-
 pub struct NextState<'a> {
+  /// The current piece
   pub piece: &'a Piece,
+  /// The next piece
   pub preview: &'a Piece,
+  /// the current piece can spawn
+  pub space: bool,
 }
 
 pub enum BoardEvent {
@@ -62,12 +62,15 @@ impl Board {
     }
   }
 
-  pub fn render(&self, renderer: &mut Renderer) {
-    // draw tiles
-    for tile in &self.tilemap {
-      if let Some(tile) = tile {
-        let position = Vec2::new(tile.position.x, tile.position.y);
-        renderer.draw_from_texture(&self.tilemap.tileset.texture, position, tile.src);
+  pub fn render(&self, renderer: &mut Renderer, paused: bool) {
+    // pause is not for cheating, don't render the board while paused
+    if !paused {
+      // draw tiles
+      for tile in &self.tilemap {
+        if let Some(tile) = tile {
+          let position = Vec2::new(tile.position.x, tile.position.y);
+          renderer.draw_from_texture(&self.tilemap.tileset.texture, position, tile.src);
+        }
       }
     }
 
@@ -145,10 +148,17 @@ impl Board {
     self.drop_timeout = Timeout::new(Duration::from_millis(speed_ms), Repeat::Forever);
   }
 
+  fn can_piece_spawn(&self, piece: &Piece) -> bool {
+    let shape = transform_shape(&piece.shape_data[0], &piece.position);
+    let collision = check_shape_collision(&shape, &self.tilemap); // check if the piece can spawn
+    !collision
+  }
+
   /// Reset `Piece` to a new random shape and check if it can be spawned
   pub fn next_piece(&mut self) -> NextState {
     let mut piece = std::mem::take(&mut self.preview).unwrap_or(self.get_random_piece()); // swap the piece with the current preview
     piece.position = Coordinate::new(SPAWN_OFFSET_X, FIRST_ROW - piece.shape_type.data().offset_y as i32);
+    let space = self.can_piece_spawn(&piece);
 
     // todo: spawn check
 
@@ -162,6 +172,7 @@ impl Board {
     NextState {
       piece: self.piece.as_ref().expect("failed to retrieve piece"),
       preview: self.preview.as_ref().expect("failed to retrieve preview"),
+      space,
     }
   }
 
