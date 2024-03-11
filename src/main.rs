@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::board::{Board, BoardEvent, NextState};
 use crate::constants::board::{BORDER_COLOR, TILE_SIZE};
-use crate::constants::game::{CLEAR_COOLDOWN, LEVEL_TEXT_POSITION, LINES_PER_LEVEL, LINES_TEXT_POSITION, MAX_TETRIS_LEVEL, NEXT_TEXT_POSITION, PREVIEW_BORDER, PREVIEW_DIMENSIONS, PREVIEW_POSITION, SCORE_TEXT_POSITION, SPAWN_COOLDOWN, START_TETRIS_LEVEL, STATISTICS_BORDER};
+use crate::constants::game::{CLEAR_COOLDOWN, LEVEL_TEXT_POSITION, LINES_PER_LEVEL, LINES_TEXT_POSITION, MAX_TETRIS_LEVEL, MUSIC_VOLUME, NEXT_TEXT_POSITION, PREVIEW_BORDER, PREVIEW_DIMENSIONS, PREVIEW_POSITION, SCORE_TEXT_POSITION, SFX_VOLUME, SPAWN_COOLDOWN, START_TETRIS_LEVEL, STATISTICS_BORDER};
 use crate::constants::window::{SCREEN_COLOR, SCREEN_PIXELS, TITLE, WINDOW_DIMENSIONS};
 use crate::engine::application::{Actions, run_application};
 use crate::engine::asset::audio::Loop;
@@ -83,7 +83,7 @@ fn setup(assets: &AssetManager) -> Tetris {
   write_preview(&mut preview_board, preview);
 
   // play music
-  assets.audio.play("korobeiniki", 8, Loop::Forever).expect("failed to play music");
+  assets.audio.play("korobeiniki", MUSIC_VOLUME, Loop::Forever).expect("failed to play music");
 
   let typeface = assets.typefaces
     .use_store()
@@ -162,15 +162,15 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
   match state.board.update(events) {
     BoardEvent::MoveLeft | BoardEvent::MoveRight => {
       // play sound effect
-      assets.audio.play("move", 24, Loop::Once).expect("failed to play sound effect");
+      assets.audio.play("move", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
     }
     BoardEvent::Rotate => {
       // play sound effect
-      assets.audio.play("rotate", 24, Loop::Once).expect("failed to play sound effect");
+      assets.audio.play("rotate", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
     }
     BoardEvent::Land => {
       // play sound effect
-      assets.audio.play("land", 24, Loop::Once).expect("failed to play sound effect");
+      assets.audio.play("land", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
 
       // delete active piece
       state.board.kill_piece();
@@ -183,7 +183,7 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
         state.lines_text.set_content(format!("LINES {:0>7}", state.lines)).expect("failed to set content");
 
         if let clear_line_sfx = determine_sfx(lines_cleared).expect("failed to determine sfx") {
-          assets.audio.play(clear_line_sfx, 24, Loop::Once).expect("failed to play sound effect");
+          assets.audio.play(clear_line_sfx, SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
         }
 
         // clear lines
@@ -226,7 +226,7 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
         if (state.level <= MAX_TETRIS_LEVEL) {
           let new_speed = calculate_speed_ms(state.level).expect("failed to calculate speed");
           state.board.set_speed_ms(new_speed);
-          assets.audio.play("level", 24, Loop::Once).expect("failed to play sound effect");
+          assets.audio.play("level", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
         } else {
           // todo: handle beat game, good luck testing this
         }
@@ -234,7 +234,7 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
     }
 
     // drop sfx
-    assets.audio.play("shift", 24, Loop::Once).expect("failed to play sound effect");
+    assets.audio.play("shift", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
 
     // start the spawn cooldown
     state.spawn_cooldown.start();

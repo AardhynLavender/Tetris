@@ -15,6 +15,11 @@ pub const PREVIEW_POSITION: Vec2<i32> = Vec2::new(142, 49);
 pub const PREVIEW_DIMENSIONS: Vec2<Size> = Vec2::new(4, 4);
 pub const NEXT_TEXT_POSITION: Vec2<i32> = Vec2::new(108, 61);
 
+// Sound //
+
+pub const SFX_VOLUME: i32 = 24;
+pub const MUSIC_VOLUME: i32 = 8;
+
 // Cooldowns //
 
 /// time it takes for a piece to spawn
