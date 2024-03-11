@@ -1,14 +1,11 @@
 use std::rc::Rc;
 
-
-use sdl2::rect::{Point, Rect};
+use sdl2::rect::Rect;
 use sdl2::render::TextureCreator;
 use sdl2::video::WindowContext;
 
 use crate::engine::asset::texture::{SrcRect, Texture};
-use crate::engine::geometry::{
-  Cir2, IntConvertable, Line2, Pol2, Ray2, Rec2, SizePrimitive, Vec2,
-};
+use crate::engine::geometry::{IntConvertable, Rec2, SizePrimitive, Vec2};
 use crate::engine::render::color::RGBA;
 
 pub mod color;
@@ -91,30 +88,6 @@ impl Renderer {
     self.subsystem.copy(&texture.internal, src, dest).unwrap();
   }
 
-  pub fn draw_vec<T: IntConvertable>(&mut self, vec: Vec2<T>, color: RGBA) {
-    self.set_color(color);
-    self.subsystem.draw_point(Point::from(vec))
-      .map_err(|error| eprintln!("{error}"))
-      .ok();
-  }
-
-  pub fn draw_from<T: IntConvertable>(&mut self, from: Vec2<T>, to: Vec2<T>, color: RGBA) {
-    self.set_color(color);
-    self.subsystem
-      .draw_line(from, to)
-      .map_err(|error| eprintln!("{error}"))
-      .ok();
-  }
-
-  pub fn draw_line<T: IntConvertable>(&mut self, line: Line2<T>, color: RGBA) {
-    self.draw_from(line.start, line.end, color);
-  }
-
-  pub fn draw_ray<T: IntConvertable>(&mut self, _ray: Ray2<T>, color: RGBA, _max_length: T) {
-    self.set_color(color);
-    panic!("not implemented");
-  }
-
   pub fn draw_rect<T: IntConvertable, U: SizePrimitive>(
     &mut self,
     rect: Rec2<T, U>,
@@ -125,46 +98,6 @@ impl Renderer {
       .draw_rect(Rect::from(rect))
       .map_err(|error| eprintln!("{error}"))
       .ok();
-  }
-
-  pub fn draw_rect_filled<T: IntConvertable, U: SizePrimitive>(&mut self, rect: Rec2<T, U>, outline: RGBA, fill: RGBA) {
-    let raw_rect = Rect::from(rect);
-
-    // draw fill
-    self.set_color(fill);
-    self.subsystem
-      .fill_rect(raw_rect)
-      .map_err(|error| eprintln!("{error}"))
-      .ok();
-
-    // draw outline
-    self.set_color(outline);
-    self.subsystem
-      .draw_rect(raw_rect)
-      .map_err(|error| eprintln!("{error}"))
-      .ok();
-  }
-
-  pub fn draw_poly<T: IntConvertable>(&mut self, pol: Pol2<T>, color: RGBA) {
-    let vertices = pol.vertices.len();
-    for (i, from) in pol.vertices.iter().enumerate() {
-      let to = &pol.vertices[(i + 1) % vertices];
-      self.draw_from(*from, *to, color);
-    }
-  }
-
-  pub fn draw_poly_filled<T: IntConvertable>(&mut self, _pol: Pol2<T>, outline: RGBA, _fill: RGBA) {
-    self.set_color(outline);
-    panic!("not implemented");
-  }
-
-  pub fn draw_circle<T: IntConvertable>(&mut self, _circle: Cir2<T>, color: RGBA) {
-    self.set_color(color);
-    panic!("not implemented");
-  }
-
-  pub fn draw_circle_filled<T: IntConvertable>(&mut self, _circle: Cir2<T>, _outline: RGBA, _fill: RGBA) {
-    panic!("not implemented");
   }
 }
 

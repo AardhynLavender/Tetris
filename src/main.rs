@@ -211,7 +211,7 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
             state.lines += lines_cleared;
             state.lines_text.set_content(format!("LINES {:0>7}", state.lines)).expect("failed to set content");
 
-            if let clear_line_sfx = determine_sfx(lines_cleared).expect("failed to determine sfx") {
+            if let Some(clear_line_sfx) = determine_sfx(lines_cleared) {
               assets.audio.play(clear_line_sfx, SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
             }
 
@@ -257,7 +257,7 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
               state.board.set_speed_ms(new_speed);
               assets.audio.play("level", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
             } else {
-              // todo: handle beat game, good luck testing this
+              state.game_state = GameState::Won;
             }
           }
         }
@@ -277,6 +277,9 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
           assets.audio.play("gameover", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
         }
       }
+    }
+    GameState::Won => {
+      panic!("Look ma, I won!");
     }
     _ => {}
   }

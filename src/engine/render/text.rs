@@ -33,10 +33,4 @@ impl Text {
     self.content = content;
     Ok(())
   }
-
-  /// Sets the color of the text
-  pub fn set_color(&mut self, color: RGBA) -> Result<(), String> {
-    self.color = color;
-    Ok(())
-  }
 }

@@ -15,12 +15,6 @@ impl<T: ?Sized> HeapStore<T> {
   pub fn add(&mut self, key: String, value: Rc<T>) -> Rc<T> {
     Rc::clone(self.store.entry(key).or_insert(value))
   }
-  pub fn remove(&mut self, key: &str) -> Result<Rc<T>, &'static str> {
-    self.store.remove(key).ok_or("Failed to remove from store")
-  }
-  pub fn clear(&mut self) {
-    self.store.clear()
-  }
 
   // Accessors //
 
@@ -30,24 +24,6 @@ impl<T: ?Sized> HeapStore<T> {
     } else {
       Err(format!("Failed to get {} from store", key))
     };
-  }
-  pub fn get_mut(&mut self, key: &str) -> Result<&mut Rc<T>, String> {
-    match self.store.get_mut(key) {
-      Some(value) => Ok(value),
-      None => Err(format!("Failed to get `{}` from store", key)),
-    }
-  }
-
-  // Queries //
-
-  pub fn contains(&self, key: &str) -> bool {
-    self.store.contains_key(key)
-  }
-  pub fn len(&self) -> usize {
-    self.store.len()
-  }
-  pub fn is_empty(&self) -> bool {
-    self.store.is_empty()
   }
 }
 
@@ -67,12 +43,6 @@ impl<T> Store<T> {
   pub fn add(&mut self, key: String, value: T) -> &mut T {
     self.store.entry(key).or_insert(value)
   }
-  pub fn remove(&mut self, key: &str) -> Result<T, &'static str> {
-    self.store.remove(key).ok_or("Failed to remove from store")
-  }
-  pub fn clear(&mut self) {
-    self.store.clear()
-  }
 
   // Accessors //
 
@@ -82,24 +52,6 @@ impl<T> Store<T> {
     } else {
       Err(format!("Failed to get {} from store", key))
     };
-  }
-  pub fn get_mut(&mut self, key: &str) -> Result<&mut T, String> {
-    match self.store.get_mut(key) {
-      Some(value) => Ok(value),
-      None => Err(format!("Failed to get `{}` from store", key)),
-    }
-  }
-
-  // Queries //
-
-  pub fn contains(&self, key: &str) -> bool {
-    self.store.contains_key(key)
-  }
-  pub fn len(&self) -> usize {
-    self.store.len()
-  }
-  pub fn is_empty(&self) -> bool {
-    self.store.is_empty()
   }
 }
 

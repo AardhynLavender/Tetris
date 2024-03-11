@@ -33,11 +33,6 @@ impl TextureLoader {
     Ok(String::from(basename))
   }
 
-  /// Adds a texture to the store
-  pub fn add(&mut self, name: String, texture: Rc<Texture>) {
-    self.store.add(name, texture);
-  }
-
   /// Builds a texture from a surface
   pub fn build_from_surface(&self, surface: Surface) -> Result<Texture, &str> {
     let internal_texture = self.subsystem

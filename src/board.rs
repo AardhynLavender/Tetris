@@ -13,7 +13,7 @@ use crate::engine::render::Renderer;
 use crate::engine::tile::tile::TileData;
 use crate::engine::tile::tilemap::Tilemap;
 use crate::engine::tile::tileset::Tileset;
-use crate::engine::time::{Repeat, Timeout};
+use crate::engine::time::{ConsumeAction, Timer};
 use crate::engine::utility::types::{Coordinate, Size2};
 use crate::math::calculate_speed_ms;
 use crate::piece::{erase_piece, Piece, PieceState, rotate_piece, Transform, transform_piece, write_piece};
@@ -39,7 +39,7 @@ pub struct Board {
   piece: Option<Piece>,
   preview: Option<Piece>,
   tilemap: Tilemap,
-  drop_timeout: Timeout,
+  drop_timeout: Timer,
   border: Size2,
 }
 
@@ -56,7 +56,7 @@ impl Board {
     Self {
       piece: None,
       preview: None,
-      drop_timeout: Timeout::new(Duration::from_millis(staring_fall_speed), Repeat::Forever),
+      drop_timeout: Timer::new(Duration::from_millis(staring_fall_speed), true),
       tilemap,
       border,
     }
@@ -87,7 +87,7 @@ impl Board {
       erase_piece(piece, &mut self.tilemap); // erase the old piece
 
       // move the piece down
-      self.drop_timeout.on_timeout(&mut || {
+      self.drop_timeout.consume_map(ConsumeAction::Restart, &mut || {
         if transform_piece(piece, Transform::Down, &mut self.tilemap) == PieceState::Landed {
           board_event = BoardEvent::Land;
         }
@@ -123,7 +123,7 @@ impl Board {
         if transform_piece(piece, Transform::Down, &mut self.tilemap) == PieceState::Landed {
           board_event = BoardEvent::Land;
         }
-        self.drop_timeout.reset(); // reset the computer drop timeout
+        self.drop_timeout.restart(); // reset the computer drop timeout
         piece.player_drop_cooldown.restart(); // reset the player drop cooldown
       }
 
@@ -138,14 +138,9 @@ impl Board {
     Piece::build(ShapeType::random(), &self.tilemap.tileset)
   }
 
-  /// Get an immutable reference to the preview piece
-  pub fn get_preview(&self) -> &Option<Piece> {
-    &self.preview
-  }
-
   /// Set the speed the computer drops a shape
   pub fn set_speed_ms(&mut self, speed_ms: u64) {
-    self.drop_timeout = Timeout::new(Duration::from_millis(speed_ms), Repeat::Forever);
+    self.drop_timeout = Timer::new(Duration::from_millis(speed_ms), true);
   }
 
   fn can_piece_spawn(&self, piece: &Piece) -> bool {
@@ -167,7 +162,7 @@ impl Board {
     let mut preview = self.get_random_piece(); // create a new preview
     preview.position = preview.shape_type.data().preview_offset;
     self.preview = Some(preview); // create a new preview
-    self.drop_timeout.reset(); // ensure the drop timeout is 0
+    self.drop_timeout.restart(); // ensure the drop timeout is 0
 
     NextState {
       piece: self.piece.as_ref().expect("failed to retrieve piece"),

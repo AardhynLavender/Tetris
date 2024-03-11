@@ -13,7 +13,6 @@ pub enum Sound {
 pub enum Loop {
   Forever,
   Once,
-  For { times: i32 },
 }
 
 pub struct Audio {
@@ -61,7 +60,6 @@ impl AudioPlayer {
     let loops = match looping {
       Loop::Forever => -1,
       Loop::Once => 0,
-      Loop::For { times } => times,
     };
 
     match &audio.sound {
@@ -71,9 +69,8 @@ impl AudioPlayer {
         Ok(())
       }
       Sound::Effect { data } => {
-        if let channel = sdl2::mixer::Channel::all().play(data, loops).expect("Failed to play effect") {
-          channel.set_volume(volume);
-        }
+        let channel = sdl2::mixer::Channel::all().play(data, loops)?;
+        channel.set_volume(volume);
         Ok(())
       }
     }

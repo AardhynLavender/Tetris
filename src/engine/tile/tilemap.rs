@@ -1,16 +1,10 @@
-
 use std::rc::Rc;
 
 use crate::engine::geometry::Vec2;
-use crate::engine::structure::store::Store;
 use crate::engine::tile::tile::{Tile, TileData};
 use crate::engine::tile::tileset::Tileset;
 use crate::engine::utility::container::{coordinate_to_index, index_to_coordinate};
 use crate::engine::utility::types::{Coordinate, Size2};
-
-// Store //
-
-pub type TilesetStore = Store<Tilemap>;
 
 // Tilemap //
 
@@ -92,11 +86,6 @@ impl Tilemap {
       self.position.x + (coordinate.x * tile_width as i32),
       self.position.y + (coordinate.y * tile_height as i32),
     )
-  }
-  fn index_to_worldspace(&self, index: usize) -> Vec2<i32> {
-    let dimensions = Coordinate::new(self.dimensions.x as i32, self.dimensions.y as i32);
-    let coordinate = index_to_coordinate(index, &dimensions);
-    self.coord_to_worldspace(&coordinate)
   }
 
   // Queries //

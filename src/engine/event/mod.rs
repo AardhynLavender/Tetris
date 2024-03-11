@@ -49,9 +49,6 @@ impl EventStore {
   pub fn is_key_held(&self, keycode: Keycode) -> bool {
     self.held_keys.contains(&keycode)
   }
-  pub fn get_mouse_position(&self) -> Vec2<i32> {
-    self.mouse_position
-  }
 }
 
 pub struct Events {

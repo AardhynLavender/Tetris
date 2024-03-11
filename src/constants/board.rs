@@ -1,4 +1,3 @@
-use crate::constants::window::SCREEN_PIXELS;
 use crate::engine::geometry::Vec2;
 use crate::engine::render::color::color;
 use crate::engine::render::color::RGBA;
@@ -6,8 +5,6 @@ use crate::engine::utility::types::{Size, Size2};
 
 pub const TILE_SIZE: Size = 8;
 pub const TILE_PIECE_MARGIN: Size = 1; // margin between pieces in the tileset
-
-pub const SCREEN_CENTER: Vec2<i32> = Vec2::new(SCREEN_PIXELS.x as i32 / 2, SCREEN_PIXELS.y as i32 / 2);
 
 pub const BORDER_MARGIN: Size = 2;
 pub const BORDER_COLOR: RGBA = color::SURFACE_0;
