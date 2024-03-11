@@ -82,8 +82,8 @@ impl AudioPlayer {
   pub fn stop(&self, name: &str) -> Result<(), String> {
     let audio = self.store.get(name)?;
     match &audio.sound {
-      Sound::Music => sdl2::mixer::Music::halt(),
-      Sound::Effect => unimplemented!("Stopping sound effects is not yet implemented")
+      Sound::Music { data: _ } => sdl2::mixer::Music::halt(),
+      Sound::Effect { data: _ } => unimplemented!("Stopping sound effects is not yet implemented")
     }
     Ok(())
   }
