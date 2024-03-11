@@ -1,21 +1,24 @@
 use std::rc::Rc;
 
-use crate::board::{Board, BoardEvent};
+use crate::board::{Board, BoardEvent, NextState};
 use crate::constants::board::{BORDER_COLOR, TILE_SIZE};
-use crate::constants::game::{CLEAR_COOLDOWN, LINES_PER_LEVEL, MAX_TETRIS_LEVEL, SPAWN_COOLDOWN, START_TETRIS_LEVEL};
+use crate::constants::game::{CLEAR_COOLDOWN, LEVEL_TEXT_POSITION, LINES_PER_LEVEL, LINES_TEXT_POSITION, MAX_TETRIS_LEVEL, NEXT_TEXT_POSITION, PREVIEW_BORDER, PREVIEW_DIMENSIONS, PREVIEW_POSITION, SCORE_TEXT_POSITION, SPAWN_COOLDOWN, START_TETRIS_LEVEL, STATISTICS_BORDER};
 use crate::constants::window::{SCREEN_COLOR, SCREEN_PIXELS, TITLE, WINDOW_DIMENSIONS};
 use crate::engine::application::{Actions, run_application};
 use crate::engine::asset::audio::Loop;
 use crate::engine::asset::audio::SoundType;
+use crate::engine::asset::texture::Texture;
 use crate::engine::event::EventStore;
-use crate::engine::geometry::{Rec2, Vec2};
+use crate::engine::geometry::Vec2;
 use crate::engine::manager::assets::{AssetManager, AssetType};
 use crate::engine::render::{Properties, Renderer};
 use crate::engine::render::color::color;
 use crate::engine::render::text::Text;
+use crate::engine::tile::tilemap::Tilemap;
 use crate::engine::tile::tileset::Tileset;
 use crate::engine::time::{ConsumeAction, Timer};
 use crate::math::{calculate_score, calculate_speed_ms, determine_sfx};
+use crate::piece::{Piece, write_piece};
 
 mod engine;
 mod constants;
@@ -24,17 +27,24 @@ mod board;
 mod math;
 mod algorithm;
 
+// state
 struct Tetris {
+  board: Board,
+
+  preview: Tilemap,
+  next_text: Rc<Texture>,
+
   level: u32,
   score: u32,
   lines: u32,
-  spawn_cooldown: Timer,
-  drop_cooldown: Timer,
-  lines_to_clear: Vec<usize>,
   score_text: Text,
   lines_text: Text,
   level_text: Text,
-  board: Board,
+
+  spawn_cooldown: Timer,
+  drop_cooldown: Timer,
+
+  lines_to_clear: Vec<usize>,
 }
 
 fn load(assets: &mut AssetManager) {
@@ -63,59 +73,84 @@ fn setup(assets: &AssetManager) -> Tetris {
   let tileset = assets.tilesets.get("spritesheet").expect("failed to fetch tileset");
 
   // create board
-  let mut board = Board::new(tileset);
+  let mut board = Board::new(Rc::clone(&tileset));
 
-  // spawn first piece
-  board.spawn_piece();
+  // create preview
+  let mut preview_board = Tilemap::new(tileset, PREVIEW_POSITION, PREVIEW_DIMENSIONS);
 
-  // start music
+  // write preview
+  let NextState { preview, .. } = board.next_piece();
+  write_preview(&mut preview_board, preview);
+
+  // play music
   assets.audio.play("korobeiniki", 8, Loop::Forever).expect("failed to play music");
-
-  let score_text = Text::new(
-    String::from("score 0000000"),
-    color::TEXT,
-  ).expect("failed to build text");
-  let lines_text = Text::new(
-    String::from("lines 0000000"),
-    color::TEXT,
-  ).expect("failed to build text");
-  let level_text = Text::new(
-    String::from(format!("level {:0>7}", START_TETRIS_LEVEL)),
-    color::TEXT,
-  ).expect("failed to build text");
-
-  Tetris {
-    level: START_TETRIS_LEVEL,
-    score: 0,
-    lines: 0,
-    spawn_cooldown: Timer::new(SPAWN_COOLDOWN, false),
-    drop_cooldown: Timer::new(CLEAR_COOLDOWN, false),
-    lines_to_clear: Vec::new(),
-    score_text,
-    lines_text,
-    level_text,
-    board,
-  }
-}
-
-fn render(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
-  state.board.render(renderer);
 
   let typeface = assets.typefaces
     .use_store()
     .get("typeface")
     .expect("failed to fetch typeface");
 
-  renderer.draw_rect(Rec2::new(Vec2::new(99, 8), Vec2::new(83u32, 31u32)), BORDER_COLOR);
+  Tetris {
+    board,
+    preview: preview_board,
+
+    spawn_cooldown: Timer::new(SPAWN_COOLDOWN, false),
+    drop_cooldown: Timer::new(CLEAR_COOLDOWN, false),
+    lines_to_clear: Vec::new(),
+
+    level: START_TETRIS_LEVEL,
+    score: 0,
+    lines: 0,
+    score_text: Text::new(String::from("score 0000000"), color::TEXT),
+    lines_text: Text::new(String::from("lines 0000000"), color::TEXT),
+    level_text: Text::new(String::from(format!("level {:0>7}", START_TETRIS_LEVEL)), color::TEXT),
+    next_text: Rc::new(Text::new(String::from("next"), color::TEXT).build_texture(&typeface, &assets.textures).expect("failed to build texture")),
+  }
+}
+
+fn write_preview(preview: &mut Tilemap, piece: &Piece) {
+  preview.clear_tiles();
+  write_piece(piece, preview);
+}
+
+fn render_preview(preview: &Tilemap, text: &Rc<Texture>, renderer: &mut Renderer) {
+  // draw preview
+  for tile in preview {
+    if let Some(tile) = tile {
+      let position = Vec2::new(tile.position.x, tile.position.y);
+      renderer.draw_from_texture(&preview.tileset.texture, position, tile.src);
+    }
+  }
+
+  // draw border
+  renderer.draw_rect(PREVIEW_BORDER, BORDER_COLOR);
+
+  // draw text
+  renderer.draw_texture(&text, NEXT_TEXT_POSITION);
+}
+
+fn render_statistics(state: &Tetris, assets: &AssetManager, renderer: &mut Renderer) {
+  let typeface = assets.typefaces
+    .use_store()
+    .get("typeface")
+    .expect("failed to fetch typeface");
 
   let st_texture = Rc::new(state.score_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
-  renderer.draw_texture(&st_texture, Vec2::new(102, 10));
+  renderer.draw_texture(&st_texture, SCORE_TEXT_POSITION);
 
   let lt_texture = Rc::new(state.lines_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
-  renderer.draw_texture(&lt_texture, Vec2::new(102, 20));
+  renderer.draw_texture(&lt_texture, LINES_TEXT_POSITION);
 
   let lv_texture = Rc::new(state.level_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
-  renderer.draw_texture(&lv_texture, Vec2::new(102, 30));
+  renderer.draw_texture(&lv_texture, LEVEL_TEXT_POSITION);
+
+  renderer.draw_rect(STATISTICS_BORDER, BORDER_COLOR);
+}
+
+fn render(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
+  state.board.render(renderer);
+  render_preview(&state.preview, &state.next_text, renderer);
+  render_statistics(state, assets, renderer);
 }
 
 fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
@@ -130,7 +165,7 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
     }
     BoardEvent::Land => {
       // play sound effect
-      assets.audio.play("land", 25, Loop::Once).expect("failed to play sound effect");
+      assets.audio.play("land", 24, Loop::Once).expect("failed to play sound effect");
 
       // delete active piece
       state.board.kill_piece();
@@ -201,7 +236,8 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
 
   // check if the spawn cooldown is done
   if state.spawn_cooldown.consume(ConsumeAction::Disable) {
-    state.board.spawn_piece();
+    let NextState { preview, .. } = state.board.next_piece();
+    write_preview(&mut state.preview, preview);
   }
 }
 

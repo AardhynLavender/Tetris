@@ -155,12 +155,16 @@ pub const DEFAULT_ROTATION: usize = 0; // The first index is the default rotatio
 pub struct PieceData {
   pub tile_id: TileId,
   pub shape: ShapeData,
-  pub offset_y: u32, // the shape should spawn against the roof, so offset by the empty space above the shape in the first rotation.
+  /// align shapes better in the preview
+  pub preview_offset: Coordinate,
+  /// The shape should spawn against the roof
+  /// So offset by the empty space above the shape in the first rotation.
+  pub offset_y: u32,
 }
 
 impl PieceData {
-  pub fn new(shape: ShapeData, tile_id: TileId, offset_y: u32) -> Self {
-    Self { shape, tile_id, offset_y }
+  pub fn new(shape: ShapeData, tile_id: TileId, offset_y: u32, preview_offset: Coordinate) -> Self {
+    Self { shape, tile_id, offset_y, preview_offset }
   }
 }
 
@@ -170,13 +174,13 @@ pub enum ShapeType { I, J, L, O, S, T, Z }
 impl ShapeType {
   pub fn data(&self) -> PieceData {
     match self {
-      ShapeType::I => PieceData::new(get_shape_rotation_coordinates(I_PIECE), 1, 1),
-      ShapeType::J => PieceData::new(get_shape_rotation_coordinates(J_PIECE), 2, 1),
-      ShapeType::L => PieceData::new(get_shape_rotation_coordinates(L_PIECE), 3, 1),
-      ShapeType::O => PieceData::new(get_shape_rotation_coordinates(O_PIECE), 4, 0),
-      ShapeType::S => PieceData::new(get_shape_rotation_coordinates(S_PIECE), 5, 1),
-      ShapeType::T => PieceData::new(get_shape_rotation_coordinates(T_PIECE), 6, 1),
-      ShapeType::Z => PieceData::new(get_shape_rotation_coordinates(Z_PIECE), 7, 1),
+      ShapeType::I => PieceData::new(get_shape_rotation_coordinates(I_PIECE), 1, 2, Coordinate::new(0, -1)),
+      ShapeType::J => PieceData::new(get_shape_rotation_coordinates(J_PIECE), 2, 1, Coordinate::new(1, 0)),
+      ShapeType::L => PieceData::new(get_shape_rotation_coordinates(L_PIECE), 3, 1, Coordinate::new(1, 0)),
+      ShapeType::O => PieceData::new(get_shape_rotation_coordinates(O_PIECE), 4, 0, Coordinate::new(2, 1)),
+      ShapeType::S => PieceData::new(get_shape_rotation_coordinates(S_PIECE), 5, 1, Coordinate::new(1, 0)),
+      ShapeType::T => PieceData::new(get_shape_rotation_coordinates(T_PIECE), 6, 1, Coordinate::new(1, 0)),
+      ShapeType::Z => PieceData::new(get_shape_rotation_coordinates(Z_PIECE), 7, 1, Coordinate::new(1, 0)),
     }
   }
 

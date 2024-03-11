@@ -1,5 +1,20 @@
 use std::time::Duration;
 
+use crate::engine::geometry::{Rec2, Vec2};
+use crate::engine::utility::types::Size;
+
+// Displays //
+
+pub const STATISTICS_BORDER: Rec2<i32, Size> = Rec2::new(Vec2::new(99, 8), Vec2::new(83u32, 31u32));
+pub const SCORE_TEXT_POSITION: Vec2<i32> = Vec2::new(102, 10);
+pub const LINES_TEXT_POSITION: Vec2<i32> = Vec2::new(102, 20);
+pub const LEVEL_TEXT_POSITION: Vec2<i32> = Vec2::new(102, 30);
+
+pub const PREVIEW_BORDER: Rec2<i32, Size> = Rec2::new(Vec2::new(99, 48), Vec2::new(83u32, 33u32));
+pub const PREVIEW_POSITION: Vec2<i32> = Vec2::new(142, 49);
+pub const PREVIEW_DIMENSIONS: Vec2<Size> = Vec2::new(4, 4);
+pub const NEXT_TEXT_POSITION: Vec2<i32> = Vec2::new(108, 61);
+
 // Cooldowns //
 
 /// time it takes for a piece to spawn

@@ -11,8 +11,11 @@ pub struct Text {
 }
 
 impl Text {
-  pub fn new(content: String, color: RGBA) -> Result<Self, String> {
-    Ok(Self { content, color })
+  pub fn new(content: String, color: RGBA) -> Self {
+    Self {
+      content,
+      color,
+    }
   }
 
   /// Builds a `Texture` from `content` in `font`

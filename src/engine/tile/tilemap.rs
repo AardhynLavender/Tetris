@@ -78,6 +78,12 @@ impl Tilemap {
     self.clear_tile_at_coord(&coordinate);
   }
 
+  pub fn clear_tiles(&mut self) {
+    for tile in &mut self.tiles {
+      *tile = None;
+    }
+  }
+
   // conversion //
 
   fn coord_to_worldspace(&self, coordinate: &Coordinate) -> Vec2<i32> {

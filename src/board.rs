@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use sdl2::keyboard::Keycode;
 
-use crate::constants::board::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_COLOR, BORDER_MARGIN, TILE_PIECE_MARGIN};
+use crate::constants::board::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_COLOR, BORDER_MARGIN, FIRST_ROW, SPAWN_OFFSET_X, TILE_PIECE_MARGIN};
 use crate::constants::game::START_TETRIS_LEVEL;
 use crate::constants::piece::ShapeType;
 use crate::engine::event::EventStore;
@@ -22,6 +22,11 @@ pub enum SpawnState {
   Occupied,
 }
 
+pub struct NextState<'a> {
+  pub piece: &'a Piece,
+  pub preview: &'a Piece,
+}
+
 pub enum BoardEvent {
   MoveLeft,
   MoveRight,
@@ -32,6 +37,7 @@ pub enum BoardEvent {
 
 pub struct Board {
   piece: Option<Piece>,
+  preview: Option<Piece>,
   tilemap: Tilemap,
   drop_timeout: Timeout,
   border: Size2,
@@ -49,6 +55,7 @@ impl Board {
 
     Self {
       piece: None,
+      preview: None,
       drop_timeout: Timeout::new(Duration::from_millis(staring_fall_speed), Repeat::Forever),
       tilemap,
       border,
@@ -123,12 +130,14 @@ impl Board {
     return board_event;
   }
 
-  /// Checks if the current `piece` has landed
-  pub fn drop_complete(&self) -> bool {
-    if let Some(piece) = &self.piece {
-      return piece.state == PieceState::Landed;
-    }
-    false
+  /// generate a random piece
+  fn get_random_piece(&self) -> Piece {
+    Piece::build(ShapeType::random(), &self.tilemap.tileset)
+  }
+
+  /// Get an immutable reference to the preview piece
+  pub fn get_preview(&self) -> &Option<Piece> {
+    &self.preview
   }
 
   /// Set the speed the computer drops a shape
@@ -137,14 +146,23 @@ impl Board {
   }
 
   /// Reset `Piece` to a new random shape and check if it can be spawned
-  pub fn spawn_piece(&mut self) {
-    let piece = Piece::build(ShapeType::random(), &*self.tilemap.tileset);
+  pub fn next_piece(&mut self) -> NextState {
+    let mut piece = std::mem::take(&mut self.preview).unwrap_or(self.get_random_piece()); // swap the piece with the current preview
+    piece.position = Coordinate::new(SPAWN_OFFSET_X, FIRST_ROW - piece.shape_type.data().offset_y as i32);
 
     // todo: spawn check
 
-    write_piece(&piece, &mut self.tilemap);
-    self.piece = Some(piece);
-    self.drop_timeout.reset();
+    write_piece(&piece, &mut self.tilemap); // write the new piece
+    self.piece = Some(piece); // get a new piece
+    let mut preview = self.get_random_piece(); // create a new preview
+    preview.position = preview.shape_type.data().preview_offset;
+    self.preview = Some(preview); // create a new preview
+    self.drop_timeout.reset(); // ensure the drop timeout is 0
+
+    NextState {
+      piece: self.piece.as_ref().expect("failed to retrieve piece"),
+      preview: self.preview.as_ref().expect("failed to retrieve preview"),
+    }
   }
 
   /// Set the `Piece` to `None`

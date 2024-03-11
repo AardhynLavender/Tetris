@@ -1,14 +1,11 @@
 use crate::algorithm::{check_bounds, check_shape_collision, get_new_shape_coordinates, is_shape_on_bottom, transform_shape};
+use crate::constants::game::{PLAYER_DROP_COOLDOWN, PLAYER_SLIDE_COOLDOWN};
+use crate::constants::piece::{DEFAULT_ROTATION, Shape, ShapeData, ShapeType};
+use crate::engine::geometry::Vec2;
 use crate::engine::tile::{tile::TileData, tilemap::Tilemap};
 use crate::engine::tile::tileset::Tileset;
 use crate::engine::time::Timer;
 use crate::engine::utility::types::Coordinate;
-use crate::constants::game::{PLAYER_DROP_COOLDOWN, PLAYER_SLIDE_COOLDOWN};
-use crate::constants::piece::{DEFAULT_ROTATION, Shape, ShapeData, ShapeType};
-
-const SPAWN_OFFSET_X: i32 = 4; // center the piece on the board.rs
-
-const FIRST_ROW: i32 = 0;
 
 #[derive(Debug, PartialEq)]
 pub enum PieceState {
@@ -36,7 +33,6 @@ impl Piece {
   pub fn build(shape_type: ShapeType, tileset: &Tileset) -> Self {
     let piece_data = shape_type.data();
     let tile_data = tileset.get_tiledata(piece_data.tile_id).expect("failed to get tile data");
-    let position = Coordinate::new(SPAWN_OFFSET_X, FIRST_ROW - piece_data.offset_y as i32);
 
     Self {
       shape_type,
@@ -45,7 +41,7 @@ impl Piece {
       shape_data: piece_data.shape,
 
       rotation: DEFAULT_ROTATION,
-      position,
+      position: Vec2::new(0, 0),
 
       player_slide_cooldown: Timer::new(PLAYER_SLIDE_COOLDOWN, true),
       player_drop_cooldown: Timer::new(PLAYER_DROP_COOLDOWN, true),
