@@ -1,7 +1,9 @@
 [package]
 name = "tetris"
 description = "A basic tetris implementation in Rust and SDL2"
+authors = ["aardhyn lavender"]
 version = "0.1.0"
+license = "MIT"
 edition = "2021"
 
 [profile.dev]
@@ -40,11 +42,9 @@ osx_frameworks = [
     "SDL2",
     "SDL2_image",
     "SDL2_ttf",
-    "SDL2_gfx",
     "SDL2_mixer"
 ]
 
 [dependencies]
-cargo-bundle = { git = "https://github.com/burtonageo/cargo-bundle", branch = "master" }
 num = "0.4.1"
 rand = "0.8.5"

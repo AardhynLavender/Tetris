@@ -1,6 +1,6 @@
-.PHONY: all run build release clean
+.PHONY: all run build release clean bundle bundle-windows
 
-all: run
+all: build run
 
 run: src
 	cargo run
@@ -14,4 +14,7 @@ release: src
 
 clean: src
 	cargo clean
+	rm -rf target
 
+bundle: src
+	cargo bundle --release
