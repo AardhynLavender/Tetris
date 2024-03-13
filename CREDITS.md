@@ -6,16 +6,16 @@ Aardhyn Lavender
 
 ## Using
 
-Rust
-Rust-SDL2 api
-Rust Rover
-Vim
-GIMP
-GitHub
-GitHub Copilot
-ChatGPT 3.5
-Windows 11
-macOS Sonoma
+- Rust
+- Rust-SDL2 api
+- Rust Rover
+- Vim
+- GIMP
+- GitHub
+- GitHub Copilot
+- ChatGPT 3.5
+- Windows 11
+- macOS Sonoma
 
 ## Music
 
@@ -32,6 +32,7 @@ QuinqureFive by GGBotNet
 ## Art
 
 Aardhyn Lavender
+
 Catppuccin Mocha color palette
 
 ## Thanks
