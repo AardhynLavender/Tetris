@@ -9,7 +9,6 @@ use crate::constants::window::{SCREEN_COLOR, SCREEN_PIXELS, TITLE, WINDOW_DIMENS
 use crate::engine::application::{Actions, run_application};
 use crate::engine::asset::audio::Loop;
 use crate::engine::asset::audio::SoundType;
-use crate::engine::asset::texture::Texture;
 use crate::engine::event::EventStore;
 use crate::engine::geometry::Vec2;
 use crate::engine::manager::assets::{AssetManager, AssetType};
@@ -43,7 +42,7 @@ struct Tetris {
   game_state: GameState,
 
   preview: Tilemap,
-  next_text: Rc<Texture>,
+  next_text: Text,
 
   level: u32,
   score: u32,
@@ -113,10 +112,10 @@ fn setup(assets: &AssetManager) -> Tetris {
     level: START_TETRIS_LEVEL,
     score: 0,
     lines: 0,
-    score_text: Text::new(String::from("score 0000000"), color::TEXT),
-    lines_text: Text::new(String::from("lines 0000000"), color::TEXT),
-    level_text: Text::new(String::from(format!("level {:0>7}", START_TETRIS_LEVEL)), color::TEXT),
-    next_text: Rc::new(Text::new(String::from("next"), color::TEXT).build_texture(&typeface, &assets.textures).expect("failed to build texture")),
+    score_text: Text::new(String::from("score 0000000"), color::TEXT, SCORE_TEXT_POSITION),
+    lines_text: Text::new(String::from("lines 0000000"), color::TEXT, LINES_TEXT_POSITION),
+    level_text: Text::new(String::from(format!("level {:0>7}", START_TETRIS_LEVEL)), color::TEXT, LEVEL_TEXT_POSITION),
+    next_text: Text::new(String::from("next"), color::TEXT, NEXT_TEXT_POSITION),
   }
 }
 
@@ -125,7 +124,8 @@ fn write_preview(preview: &mut Tilemap, piece: &Piece) {
   write_piece(piece, preview);
 }
 
-fn render_preview(preview: &Tilemap, text: &Rc<Texture>, renderer: &mut Renderer) {
+fn render_preview(preview: &Tilemap, assets: &AssetManager, text: &mut Text, renderer: &mut Renderer) {
+
   // draw preview
   for tile in preview {
     if let Some(tile) = tile {
@@ -138,30 +138,29 @@ fn render_preview(preview: &Tilemap, text: &Rc<Texture>, renderer: &mut Renderer
   renderer.draw_rect(PREVIEW_BORDER, BORDER_COLOR);
 
   // draw text
-  renderer.draw_texture(&text, NEXT_TEXT_POSITION);
+  let typeface = assets.typefaces
+    .use_store()
+    .get("typeface")
+    .expect("failed to fetch typeface");
+  text.render(&typeface, &assets.textures, renderer);
 }
 
-fn render_statistics(state: &Tetris, assets: &AssetManager, renderer: &mut Renderer) {
+fn render_statistics(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
   let typeface = assets.typefaces
     .use_store()
     .get("typeface")
     .expect("failed to fetch typeface");
 
-  let st_texture = Rc::new(state.score_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
-  renderer.draw_texture(&st_texture, SCORE_TEXT_POSITION);
-
-  let lt_texture = Rc::new(state.lines_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
-  renderer.draw_texture(&lt_texture, LINES_TEXT_POSITION);
-
-  let lv_texture = Rc::new(state.level_text.build_texture(&typeface, &assets.textures).expect("failed to build texture"));
-  renderer.draw_texture(&lv_texture, LEVEL_TEXT_POSITION);
+  state.level_text.render(&typeface, &assets.textures, renderer);
+  state.score_text.render(&typeface, &assets.textures, renderer);
+  state.lines_text.render(&typeface, &assets.textures, renderer);
 
   renderer.draw_rect(STATISTICS_BORDER, BORDER_COLOR);
 }
 
 fn render(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
   state.board.render(renderer, state.game_state == GameState::Pause);
-  render_preview(&state.preview, &state.next_text, renderer);
+  render_preview(&state.preview, assets, &mut state.next_text, renderer);
   render_statistics(state, assets, renderer);
 }
 
