@@ -8,18 +8,18 @@ pub struct Subsystem {
 }
 
 impl Subsystem {
-  pub fn new<'a, 'b>(properties: Properties) -> Self {
-    let sdl_context = sdl2::init().expect("failed to initialize SDL2");
-    sdl_context.audio().expect("failed to initialize audio");
+  /// Attempt to instantiate a subsystem of `Properties`
+  pub fn build<'a, 'b>(properties: Properties) -> Result<Self, String> {
+    let sdl_context = sdl2::init()?;
+    sdl_context.audio()?;
 
-    let renderer = Renderer::new(&sdl_context, properties);
+    let renderer = Renderer::build(&sdl_context, properties)?;
+    let events = Events::build(&sdl_context)?;
 
-    let events = Events::new(&sdl_context);
-
-    Self {
+    Ok(Self {
       sdl_context,
       renderer,
       events,
-    }
+    })
   }
 }

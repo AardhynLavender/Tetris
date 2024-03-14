@@ -2,9 +2,9 @@ use std::rc::Rc;
 
 use sdl2::keyboard::Keycode;
 
-use crate::board::{Board, BoardEvent, NextState};
-use crate::constants::board::{BORDER_COLOR, TILE_SIZE};
-use crate::constants::game::{CLEAR_COOLDOWN, LEVEL_TEXT_POSITION, LINES_PER_LEVEL, LINES_TEXT_POSITION, MAX_TETRIS_LEVEL, MUSIC_VOLUME, NEXT_TEXT_POSITION, PREVIEW_BORDER, PREVIEW_DIMENSIONS, PREVIEW_POSITION, SCORE_TEXT_POSITION, SFX_VOLUME, SPAWN_COOLDOWN, START_TETRIS_LEVEL, STATISTICS_BORDER};
+use crate::algorithm::{calculate_score, calculate_speed_ms, determine_sfx};
+use crate::board::{Board, BoardEvent, BoardState};
+use crate::constants::game::{BORDER_COLOR, CLEAR_COOLDOWN, LEVEL_TEXT_POSITION, LINES_PER_LEVEL, LINES_TEXT_POSITION, MAX_TETRIS_LEVEL, MUSIC_VOLUME, NEXT_TEXT_POSITION, PREVIEW_BORDER, PREVIEW_DIMENSIONS, PREVIEW_POSITION, SCORE_TEXT_POSITION, SFX_VOLUME, SPAWN_COOLDOWN, START_TETRIS_LEVEL, STATISTICS_BORDER, TILE_SIZE};
 use crate::constants::window::{SCREEN_COLOR, SCREEN_PIXELS, TITLE, WINDOW_DIMENSIONS};
 use crate::engine::application::{Actions, run_application};
 use crate::engine::asset::audio::Loop;
@@ -18,14 +18,16 @@ use crate::engine::render::text::Text;
 use crate::engine::tile::tilemap::Tilemap;
 use crate::engine::tile::tileset::Tileset;
 use crate::engine::time::{ConsumeAction, Timer};
-use crate::math::{calculate_score, calculate_speed_ms, determine_sfx};
 use crate::piece::{Piece, write_piece};
+
+/**
+ * Asset loading, main loop, and state management for the game.
+ */
 
 mod engine;
 mod constants;
 mod piece;
 mod board;
-mod math;
 mod algorithm;
 
 #[derive(PartialEq, Clone)]
@@ -60,7 +62,7 @@ struct Tetris {
 fn load(assets: &mut AssetManager) {
   assets.load(AssetType::Texture, String::from("asset/spritesheet.png")).expect("failed to load texture");                                    // spritesheet
 
-  assets.load(AssetType::Typeface { font_size: 5 }, String::from("asset/typeface.ttf")).expect("failed to load typeface");                   // pixel font
+  assets.load(AssetType::Typeface { font_size: 5 }, String::from("asset/typeface.ttf")).expect("failed to load typeface");                    // pixel font
 
   assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/level.ogg")).expect("failed to load sound effect");     // level advance
   assets.load(AssetType::Audio { sound_type: SoundType::Effect }, String::from("asset/line.ogg")).expect("failed to load sound effect");      // line clear
@@ -89,16 +91,11 @@ fn setup(assets: &AssetManager) -> Tetris {
   let mut preview_board = Tilemap::new(tileset, PREVIEW_POSITION, PREVIEW_DIMENSIONS);
 
   // write preview
-  let NextState { preview, .. } = board.next_piece();
+  let BoardState { preview, .. } = board.next_piece();
   write_preview(&mut preview_board, preview);
 
   // play music
   assets.audio.play("korobeiniki", MUSIC_VOLUME, Loop::Forever).expect("failed to play music");
-
-  let typeface = assets.typefaces
-    .use_store()
-    .get("typeface")
-    .expect("failed to fetch typeface");
 
   Tetris {
     game_state: GameState::Playing,
@@ -125,7 +122,6 @@ fn write_preview(preview: &mut Tilemap, piece: &Piece) {
 }
 
 fn render_preview(preview: &Tilemap, assets: &AssetManager, text: &mut Text, renderer: &mut Renderer) {
-
   // draw preview
   for tile in preview {
     if let Some(tile) = tile {
@@ -165,7 +161,7 @@ fn render(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
 }
 
 fn next_state(board: &mut Board, preview_board: &mut Tilemap) -> GameState {
-  let NextState { preview, space, .. } = board.next_piece();
+  let BoardState { preview, space, .. } = board.next_piece();
   write_preview(preview_board, preview);
   if space {
     GameState::Playing
@@ -174,7 +170,7 @@ fn next_state(board: &mut Board, preview_board: &mut Tilemap) -> GameState {
   }
 }
 
-fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
+fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris, renderer: &mut Renderer) {
   // check for pause
   if events.is_key_pressed(Keycode::Escape) {
     assets.audio.play("pause", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
@@ -183,6 +179,11 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
       GameState::Pause => GameState::Playing,
       _ => state.game_state.clone(),
     };
+  }
+
+  // check for fullscreen
+  if events.is_key_pressed(Keycode::F11) {
+    renderer.set_fullscreen(!renderer.is_fullscreen());
   }
 
   match &state.game_state {
@@ -219,7 +220,6 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
               state.board.clear_line(*line).expect("failed to clear line");
             }
 
-            // todo: Well, We should check if there is anything too drop and skip the first cooldown
             // start the drop cooldown
             state.drop_cooldown.start();
           } else {
@@ -284,26 +284,23 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris) {
   }
 }
 
-pub fn main() -> Result<(), &'static str> {
-  let properties = Properties {
-    title: String::from(TITLE),
-    dimensions: WINDOW_DIMENSIONS,
-    logical: Some(SCREEN_PIXELS),
-    fullscreen: false,
-    show_cursor: false,
-    vsync: true,
-    opengl: true,
-    software_acceleration: false,
-    hardware_acceleration: true,
-    screen_color: SCREEN_COLOR,
-  };
-
-  run_application(properties, Actions {
-    load,
-    render,
-    update,
-    setup,
-  });
-
-  Ok(())
+pub fn main() -> Result<(), String> {
+  run_application(
+    Properties {
+      title: String::from(TITLE),
+      dimensions: WINDOW_DIMENSIONS,
+      logical: Some(SCREEN_PIXELS),
+      fullscreen: false,
+      show_cursor: false,
+      vsync: true,
+      opengl: true,
+      software_acceleration: false,
+      hardware_acceleration: true,
+      screen_color: SCREEN_COLOR,
+    }, Actions {
+      load,
+      render,
+      update,
+      setup,
+    })
 }

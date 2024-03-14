@@ -3,17 +3,23 @@ use crate::engine::manager::assets::AssetManager;
 use crate::engine::render::{Properties, Renderer};
 use crate::engine::subsystem::Subsystem;
 
+/**
+ * Application structure
+ */
+
+/// Different actions that can be performed by an application
 pub struct Actions<TState> {
   /// Set up the games static assets
   pub load: fn(&mut AssetManager),
   /// Render state and assets
   pub render: fn(&mut TState, &AssetManager, &mut Renderer),
   /// Update engine state
-  pub update: fn(&EventStore, &AssetManager, &mut TState),
+  pub update: fn(&EventStore, &AssetManager, &mut TState, &mut Renderer),
   /// Set up the state
   pub setup: fn(&AssetManager) -> TState,
 }
 
+/// Bundles a subsystem with actions
 struct Application<'a, TState> {
   subsystem: &'a mut Subsystem,
   actions: Actions<TState>,
@@ -21,6 +27,7 @@ struct Application<'a, TState> {
 }
 
 impl<'a, TState> Application<'a, TState> {
+  /// Instantiate a new application using `subsystem` with `actions`
   fn new(subsystem: &'a mut Subsystem, actions: Actions<TState>) -> Self {
     Self {
       subsystem,
@@ -29,7 +36,8 @@ impl<'a, TState> Application<'a, TState> {
     }
   }
 
-  pub fn run(&mut self, assets: &mut AssetManager) -> Result<(), &str> {
+  /// Load assets, setup state, and start the main loop
+  pub fn run(&mut self, assets: &mut AssetManager) {
     (self.actions.load)(assets);
 
     let mut state = (self.actions.setup)(assets);
@@ -40,25 +48,22 @@ impl<'a, TState> Application<'a, TState> {
         break;
       }
 
-      (self.actions.update)(&self.event_store, assets, &mut state);
+      (self.actions.update)(&self.event_store, assets, &mut state, &mut self.subsystem.renderer);
       (self.actions.render)(&mut state, assets, &mut self.subsystem.renderer);
 
       self.subsystem.renderer.present();
     }
-
-    Ok(())
   }
 }
 
-pub fn run_application<TState>(properties: Properties, actions: Actions<TState>) {
-  let mut subsystem = Subsystem::new(properties);
-  let ttf_context = sdl2::ttf::init().expect("failed to initialize ttf context");
+/// Build subsystems and build application of `Properties` `TState` with `Actions`
+pub fn run_application<TState>(properties: Properties, actions: Actions<TState>) -> Result<(), String> {
+  let mut subsystem = Subsystem::build(properties)?;
+  let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
   let mut assets = AssetManager::new(&subsystem.renderer, &ttf_context);
 
-  let mut app = Application::new(
-    &mut subsystem,
-    actions,
-  );
+  let mut app = Application::new(&mut subsystem, actions);
+  app.run(&mut assets);
 
-  app.run(&mut assets).expect("failed to run application");
+  Ok(())
 }

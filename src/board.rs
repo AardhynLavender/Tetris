@@ -3,9 +3,8 @@ use std::time::Duration;
 
 use sdl2::keyboard::Keycode;
 
-use crate::algorithm::{check_shape_collision, transform_shape};
-use crate::constants::board::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_COLOR, BORDER_MARGIN, FIRST_ROW, SPAWN_OFFSET_X, TILE_PIECE_MARGIN};
-use crate::constants::game::START_TETRIS_LEVEL;
+use crate::algorithm::{calculate_speed_ms, check_shape_collision, transform_shape};
+use crate::constants::game::{BOARD_DIMENSIONS, BOARD_POSITION, BORDER_COLOR, BORDER_MARGIN, FIRST_ROW, SPAWN_OFFSET_X, START_TETRIS_LEVEL, TILE_PIECE_MARGIN};
 use crate::constants::piece::ShapeType;
 use crate::engine::event::EventStore;
 use crate::engine::geometry::{Rec2, Vec2};
@@ -15,10 +14,14 @@ use crate::engine::tile::tilemap::Tilemap;
 use crate::engine::tile::tileset::Tileset;
 use crate::engine::time::{ConsumeAction, Timer};
 use crate::engine::utility::types::{Coordinate, Size2};
-use crate::math::calculate_speed_ms;
 use crate::piece::{erase_piece, Piece, PieceState, rotate_piece, Transform, transform_piece, write_piece};
 
-pub struct NextState<'a> {
+/**
+ * Board and piece management
+ */
+
+/// The current state of the board
+pub struct BoardState<'a> {
   /// The current piece
   pub piece: &'a Piece,
   /// The next piece
@@ -27,6 +30,7 @@ pub struct NextState<'a> {
   pub space: bool,
 }
 
+/// Defines the action taken during a board update
 pub enum BoardEvent {
   MoveLeft,
   MoveRight,
@@ -35,6 +39,7 @@ pub enum BoardEvent {
   Nothing,
 }
 
+/// The game board manages the current piece, the dropped piece, and the tilemap to render them on
 pub struct Board {
   piece: Option<Piece>,
   preview: Option<Piece>,
@@ -44,6 +49,7 @@ pub struct Board {
 }
 
 impl Board {
+  /// construct a new board instance
   pub fn new(tileset: Rc<Tileset>) -> Self {
     let tilemap = Tilemap::new(Rc::clone(&tileset), BOARD_POSITION, BOARD_DIMENSIONS);
     let (w, h) = tilemap.dimensions.destructure();
@@ -62,6 +68,7 @@ impl Board {
     }
   }
 
+  /// render the board and the current piece
   pub fn render(&self, renderer: &mut Renderer, paused: bool) {
     // pause is not for cheating, don't render the board while paused
     if !paused {
@@ -80,6 +87,7 @@ impl Board {
     renderer.draw_rect(rect, BORDER_COLOR);
   }
 
+  /// update the board and the current piece
   pub fn update(&mut self, events: &EventStore) -> BoardEvent {
     let mut board_event = BoardEvent::Nothing;
 
@@ -107,12 +115,12 @@ impl Board {
       }
 
       // slide
-      if left {
+      if left && !right {
         transform_piece(piece, Transform::Left, &mut self.tilemap);
         piece.player_slide_cooldown.restart(); // reset the player slide cooldown
         board_event = BoardEvent::MoveLeft;
       }
-      if right {
+      if right && !left {
         transform_piece(piece, Transform::Right, &mut self.tilemap);
         piece.player_slide_cooldown.restart(); // reset the player slide cooldown
         board_event = BoardEvent::MoveRight;
@@ -143,6 +151,7 @@ impl Board {
     self.drop_timeout = Timer::new(Duration::from_millis(speed_ms), true);
   }
 
+  /// Check if the current piece can spawn
   fn can_piece_spawn(&self, piece: &Piece) -> bool {
     let shape = transform_shape(&piece.shape_data[0], &piece.position);
     let collision = check_shape_collision(&shape, &self.tilemap); // check if the piece can spawn
@@ -150,12 +159,10 @@ impl Board {
   }
 
   /// Reset `Piece` to a new random shape and check if it can be spawned
-  pub fn next_piece(&mut self) -> NextState {
+  pub fn next_piece(&mut self) -> BoardState {
     let mut piece = std::mem::take(&mut self.preview).unwrap_or(self.get_random_piece()); // swap the piece with the current preview
     piece.position = Coordinate::new(SPAWN_OFFSET_X, FIRST_ROW - piece.shape_type.data().offset_y as i32);
     let space = self.can_piece_spawn(&piece);
-
-    // todo: spawn check
 
     write_piece(&piece, &mut self.tilemap); // write the new piece
     self.piece = Some(piece); // get a new piece
@@ -164,7 +171,7 @@ impl Board {
     self.preview = Some(preview); // create a new preview
     self.drop_timeout.restart(); // ensure the drop timeout is 0
 
-    NextState {
+    BoardState {
       piece: self.piece.as_ref().expect("failed to retrieve piece"),
       preview: self.preview.as_ref().expect("failed to retrieve preview"),
       space,

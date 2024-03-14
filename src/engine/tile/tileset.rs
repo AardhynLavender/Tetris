@@ -6,12 +6,10 @@ use crate::engine::structure::store::HeapStore;
 use crate::engine::tile::tile::{TileData, TileId};
 use crate::engine::utility::types::Size2;
 
-// Store //
-
+/// Store tilesets
 pub type TilesetStore = HeapStore<Tileset>;
 
-// Tileset //
-
+/// Wrapper for a texture that contains tiles
 pub struct Tileset {
   pub texture: Rc<Texture>,
   pub tile_size: Vec2<u32>,
@@ -19,19 +17,23 @@ pub struct Tileset {
 }
 
 impl Tileset {
+  /// Instantiate a new tileset from a `texture` with `tile_size`
   pub fn new(texture: Rc<Texture>, tile_size: Size2) -> Self {
     let tiles = make_tiles(texture.dimensions, tile_size).expect("Failed to make tile");
     Self { texture, tile_size, tiles }
   }
 
+  /// Get a copy of the tile data at `id`
   pub fn get_tiledata(&self, id: TileId) -> Option<TileData> {
-    if let Some(tile) = self.tiles.get(id as usize) {
-      return Some(*tile).clone();
-    }
-    None
+    return if let Some(tile) = self.tiles.get(id as usize) {
+      Some(*tile).clone()
+    } else {
+      None
+    };
   }
 }
 
+/// Build up the tile data for `dimensions` using `tile_size`
 fn make_tiles(dimensions: Size2, tile_size: Size2) -> Result<Vec<TileData>, &'static str> {
   let (width, height) = dimensions.destructure();
 
@@ -51,5 +53,6 @@ fn make_tiles(dimensions: Size2, tile_size: Size2) -> Result<Vec<TileData>, &'st
       tiles.push(TileData { id, src });
     }
   }
+  
   Ok(tiles)
 }

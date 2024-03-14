@@ -1,9 +1,10 @@
 use std::time::{Duration, Instant};
 
-fn now() -> Instant {
-  Instant::now()
-}
+/**
+ * Time utilities
+ */
 
+/// A stateful timer
 #[derive(Debug)]
 pub struct Timer {
   enabled: bool,
@@ -11,17 +12,18 @@ pub struct Timer {
   duration: Duration,
 }
 
+/// What to do when a done timer is consumed
 pub enum ConsumeAction {
   Restart,
   Disable,
 }
 
 impl Timer {
-  /// Create a new timer instance
+  /// Instantiate a new timer of `duration`
   pub fn new(duration: Duration, enabled: bool) -> Self {
     Self {
       enabled,
-      start: now(),
+      start: Instant::now(),
       duration,
     }
   }
@@ -33,15 +35,15 @@ impl Timer {
 
   /// Start the timer
   pub fn start(&mut self) {
-    self.start = now();
+    self.start = Instant::now();
     self.enabled = true;
   }
   /// set the start time to now
   pub fn restart(&mut self) {
-    self.start = now();
+    self.start = Instant::now();
   }
 
-  /// Check if the timer has expired and disable it somehow
+  /// Check if the timer has expired then perform `action`
   pub fn consume(&mut self, action: ConsumeAction) -> bool {
     if !self.enabled {
       return false;

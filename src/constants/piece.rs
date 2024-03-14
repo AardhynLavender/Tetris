@@ -2,10 +2,11 @@ use crate::engine::tile::tile::TileId;
 use crate::engine::utility::random::random;
 use crate::engine::utility::types::Coordinate;
 
-type RawPieceData = &'static [&'static [&'static str]];
+/**
+ * Tetrinomino constants and associated functions
+ */
 
-// todo:  I'd be nice to use matrix rotation to generate the rotations of the pieces.
-//        but the shapes dont rotate predictably.
+type RawPieceData = &'static [&'static [&'static str]];
 
 const I_PIECE: RawPieceData = &[
   &[
@@ -125,21 +126,19 @@ const Z_PIECE: RawPieceData = &[
 ];
 
 pub type Shape = Vec<Coordinate>;
-
 pub type ShapeData = Vec<Shape>;
 
-const TILE_SYMBOL: char = '#';
+const RAW_DATA_TILE: char = '#';
+pub const DEFAULT_ROTATION: usize = 0; // The first index is the default rotation
 
-// todo:  Missing C++ constexpr right here, I'd love to generate all the shape data at compile time.
-//        Might be possible with macros?
-
+/// Convert the raw piece data into shape data
 fn get_shape_rotation_coordinates(data: RawPieceData) -> ShapeData {
   let mut shape_rotations: ShapeData = Vec::new();
   for rotation in data {
     let mut shape: Vec<Coordinate> = Vec::new();
     for (y, row) in rotation.iter().enumerate() {
       for (x, cell) in row.chars().enumerate() {
-        if cell == TILE_SYMBOL {
+        if cell == RAW_DATA_TILE {
           let coordinate = Coordinate::new(x as i32, y as i32);
           shape.push(coordinate);
         }
@@ -150,8 +149,7 @@ fn get_shape_rotation_coordinates(data: RawPieceData) -> ShapeData {
   shape_rotations
 }
 
-pub const DEFAULT_ROTATION: usize = 0; // The first index is the default rotation
-
+/// Primitive data for a Tetrimino
 pub struct PieceData {
   pub tile_id: TileId,
   pub shape: ShapeData,
@@ -168,10 +166,12 @@ impl PieceData {
   }
 }
 
+/// The different types of Tetriminos
 #[derive(Debug)]
 pub enum ShapeType { I, J, L, O, S, T, Z }
 
 impl ShapeType {
+  /// Get the piece data for the shape
   pub fn data(&self) -> PieceData {
     match self {
       ShapeType::I => PieceData::new(get_shape_rotation_coordinates(I_PIECE), 1, 2, Coordinate::new(0, -1)),
@@ -184,6 +184,7 @@ impl ShapeType {
     }
   }
 
+  /// return a random shape
   pub fn random() -> Self {
     let index = random(0, 7);
     match index {

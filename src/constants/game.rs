@@ -1,7 +1,12 @@
 use std::time::Duration;
 
 use crate::engine::geometry::{Rec2, Vec2};
-use crate::engine::utility::types::Size;
+use crate::engine::render::color::{color, RGBA};
+use crate::engine::utility::types::{Size, Size2};
+
+/**
+ * Constants relating to the game
+ */
 
 // Displays //
 
@@ -20,42 +25,41 @@ pub const NEXT_TEXT_POSITION: Vec2<i32> = Vec2::new(108, 61);
 pub const SFX_VOLUME: i32 = 24;
 pub const MUSIC_VOLUME: i32 = 8;
 
+// Board //
+
+pub const TILE_SIZE: Size = 8;
+pub const TILE_PIECE_MARGIN: Size = 1; // margin between pieces in the tileset
+
+pub const BORDER_MARGIN: Size = 2;
+pub const BORDER_COLOR: RGBA = color::SURFACE_0;
+pub const BOARD_POSITION: Vec2<i32> = Vec2::new(10, 10);
+pub const BOARD_DIMENSIONS: Size2 = Vec2::new(10, 20);
+
+pub const FIRST_ROW: i32 = 0;
+pub const SPAWN_OFFSET_X: i32 = 4; // center the piece on the board.rs
+
 // Cooldowns //
 
-/// time it takes for a piece to spawn
 pub const SPAWN_COOLDOWN: Duration = Duration::from_millis(300);
-/// time it takes for lines to clear
 pub const CLEAR_COOLDOWN: Duration = Duration::from_millis(1_000);
-///Computer moves the piece down
 pub const FALL_COOLDOWN: Duration = Duration::from_millis(1_000);
-/// The Player moves the piece left or right
 pub const PLAYER_DROP_COOLDOWN: Duration = Duration::from_millis(40);
-/// The Player moves the piece down
 pub const PLAYER_SLIDE_COOLDOWN: Duration = Duration::from_millis(100);
 
 // Multipliers //
 
-/// speed multiplier for each level
 pub const LEVEL_SPEED_MULTIPLIER: f32 = 0.8;
-/// point multiplier for one line cleared at level 1
 pub const SINGLE_LINE_MULTIPLIER: u32 = 40;
-/// point multiplier for two lines cleared at level 1
 pub const DOUBLE_LINE_MULTIPLIER: u32 = 100;
-/// point multiplier for three lines cleared at level 1
 pub const TRIPLE_LINE_MULTIPLIER: u32 = 300;
-/// point multiplier for four lines cleared at level 1
 pub const TETRIS_MULTIPLIER: u32 = 1200;
 
 // Levels //
 
-/// level the player starts on
 pub const START_TETRIS_LEVEL: u32 = 1;
-/// the maximum level the player can reach
 pub const MAX_TETRIS_LEVEL: u32 = 29;
 
 // Lines //
 
-/// the number of lines the player must clear to reach the next level
 pub const LINES_PER_LEVEL: u32 = 10;
-/// max number of lines that can be cleared at once
 pub const MAX_LINES: u32 = 4;

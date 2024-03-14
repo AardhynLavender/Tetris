@@ -8,21 +8,28 @@ use sdl2::video::WindowContext;
 use crate::engine::geometry::{Rec2, Vec2};
 use crate::engine::structure::store::HeapStore;
 
+/**
+ * Texture loading, storage, and retrieval
+ */
+
+/// store textures
 pub type TextureStore = HeapStore<Texture>;
 
+/// Load and store textures
 pub struct TextureLoader {
   store: TextureStore,
   subsystem: TextureCreator<WindowContext>,
 }
 
 impl TextureLoader {
+  /// Instantiate a new texture loader
   pub fn new(creator: TextureCreator<WindowContext>) -> Self {
     let store = HeapStore::new();
     Self { subsystem: creator, store }
   }
 
   /// Loads a texture from a file and adds it to the store
-  pub fn load(&mut self, filepath: String) -> Result<String, &str> {
+  pub fn load(&mut self, filepath: String) -> Result<(), &str> {
     let internal_texture = self.subsystem.load_texture(filepath.as_str()).map_err(|_| "Failed to load texture")?;
     let texture = Rc::new(Texture::new(internal_texture));
 
@@ -30,7 +37,7 @@ impl TextureLoader {
     let basename = filename.split(".").next().ok_or("Failed to get basename")?;
 
     self.store.add(String::from(basename), texture);
-    Ok(String::from(basename))
+    Ok(())
   }
 
   /// Builds a texture from a surface
@@ -48,15 +55,17 @@ impl TextureLoader {
   }
 }
 
+/// A rectangle of pixels
 pub type SrcRect = Rec2<u32, u32>;
 
+/// A wrapper for a SDL2 texture
 pub struct Texture {
   pub internal: sdl2::render::Texture,
   pub dimensions: Vec2<u32>,
 }
 
 impl Texture {
-  /// Create a new texture
+  /// Instantiate a new texture from an SDL2 texture
   pub fn new(texture: sdl2::render::Texture) -> Self {
     let TextureQuery { width, height, .. } = texture.query();
     let dimensions = Vec2::new(width, height);
