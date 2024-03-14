@@ -11,7 +11,7 @@ under [Releases](https://github.com/AardhynLavender/Tetris/releases).
 
 ## Installation
 
-For building from source
+For building from source.
 
 ### Rust
 
@@ -75,8 +75,7 @@ make bundle
 
 Unfortunately, I've not found any ways to successfully bundle a Rust application on Windows as **cargo-bundle** does not
 build `.msi` files correctly.
-This is a known issue.
-I've not had success with the **Wix Toolset** or either.
+I've not had success with the **WiX Toolset** or either.
 
 To ship the application, you can provide the `tetris.exe` and the `asset/` directory.
 
@@ -84,7 +83,7 @@ To ship the application, you can provide the `tetris.exe` and the `asset/` direc
 
 See [CREDITS](./CREDITS.md).
 
-I do not claim to have created the Tetris game, nor any of the music or sfx used in this software.
+> I do not claim to have created the Tetris game, nor any of the music or sfx used in this software.
 
 > ChatGPT 3.5 was used to aid my understanding of algorithmic concepts and design patterns while learning Rust.
 > Not for the generation of production code.
