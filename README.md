@@ -2,6 +2,10 @@
 
 Tetris implementation in Rust using the SDL2 library.
 
+<iframe frameborder="0" src="https://itch.io/embed/2583492" width="552" height="167">
+    <a href="https://aardhyn.itch.io/tetris">Tetris by Aardhyn Lavender</a>
+</iframe>
+
 ## Installation
 
 ### Rust
