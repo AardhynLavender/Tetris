@@ -1,4 +1,4 @@
-use crate::engine::structure::store::Store;
+use crate::engine::store::Store;
 
 /**
  * Loading and playing music and sfx

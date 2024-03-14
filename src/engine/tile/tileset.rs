@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::engine::asset::texture::Texture;
 use crate::engine::geometry::{Rec2, Vec2};
-use crate::engine::structure::store::HeapStore;
+use crate::engine::store::HeapStore;
 use crate::engine::tile::tile::{TileData, TileId};
 use crate::engine::utility::types::Size2;
 
@@ -53,6 +53,6 @@ fn make_tiles(dimensions: Size2, tile_size: Size2) -> Result<Vec<TileData>, &'st
       tiles.push(TileData { id, src });
     }
   }
-  
+
   Ok(tiles)
 }

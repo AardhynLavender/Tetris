@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use sdl2::ttf::{Font, Sdl2TtfContext};
 
-use crate::engine::structure::store::HeapStore;
+use crate::engine::store::HeapStore;
 
 /**
  * Typeface loading, storage, and retrieval

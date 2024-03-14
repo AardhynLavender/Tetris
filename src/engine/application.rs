@@ -1,5 +1,5 @@
+use crate::engine::asset::AssetManager;
 use crate::engine::event::EventStore;
-use crate::engine::manager::assets::AssetManager;
 use crate::engine::render::{Properties, Renderer};
 use crate::engine::subsystem::Subsystem;
 
