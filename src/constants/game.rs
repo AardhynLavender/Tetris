@@ -20,6 +20,11 @@ pub const PREVIEW_POSITION: Vec2<i32> = Vec2::new(142, 49);
 pub const PREVIEW_DIMENSIONS: Vec2<Size> = Vec2::new(4, 4);
 pub const NEXT_TEXT_POSITION: Vec2<i32> = Vec2::new(108, 61);
 
+pub const STATE_TEXT_POSITION: Vec2<i32> = Vec2::new(101, 90);
+pub const GAME_WON_TEXT: &str = "Look ma, I won!";
+pub const GAME_OVER_TEXT: &str = "GAME OVER";
+pub const GAME_PAUSED_TEXT: &str = "PAUSED";
+
 // Sound //
 
 pub const SFX_VOLUME: i32 = 24;

@@ -4,7 +4,7 @@ use sdl2::keyboard::Keycode;
 
 use crate::algorithm::{calculate_score, calculate_speed_ms, determine_sfx};
 use crate::board::{Board, BoardEvent, BoardState};
-use crate::constants::game::{BORDER_COLOR, CLEAR_COOLDOWN, LEVEL_TEXT_POSITION, LINES_PER_LEVEL, LINES_TEXT_POSITION, MAX_TETRIS_LEVEL, MUSIC_VOLUME, NEXT_TEXT_POSITION, PREVIEW_BORDER, PREVIEW_DIMENSIONS, PREVIEW_POSITION, SCORE_TEXT_POSITION, SFX_VOLUME, SPAWN_COOLDOWN, START_TETRIS_LEVEL, STATISTICS_BORDER, TILE_SIZE};
+use crate::constants::game::{BORDER_COLOR, CLEAR_COOLDOWN, GAME_OVER_TEXT, GAME_PAUSED_TEXT, GAME_WON_TEXT, LEVEL_TEXT_POSITION, LINES_PER_LEVEL, LINES_TEXT_POSITION, MAX_TETRIS_LEVEL, MUSIC_VOLUME, NEXT_TEXT_POSITION, PREVIEW_BORDER, PREVIEW_DIMENSIONS, PREVIEW_POSITION, SCORE_TEXT_POSITION, SFX_VOLUME, SPAWN_COOLDOWN, START_TETRIS_LEVEL, STATE_TEXT_POSITION, STATISTICS_BORDER, TILE_SIZE};
 use crate::constants::window::{SCREEN_COLOR, SCREEN_PIXELS, TITLE, WINDOW_DIMENSIONS};
 use crate::engine::application::{Actions, run_application};
 use crate::engine::asset::{AssetManager, AssetType};
@@ -45,6 +45,7 @@ struct Tetris {
 
   preview: Tilemap,
   next_text: Text,
+  state_text: Text,
 
   level: u32,
   score: u32,
@@ -58,6 +59,8 @@ struct Tetris {
 
   lines_to_clear: Vec<usize>,
 }
+
+// Initialization //
 
 fn load(assets: &mut AssetManager) {
   assets.load(AssetType::Texture, String::from("asset/spritesheet.png")).expect("failed to load texture");                                    // spritesheet
@@ -113,12 +116,19 @@ fn setup(assets: &AssetManager) -> Tetris {
     lines_text: Text::new(String::from("lines 0000000"), color::TEXT, LINES_TEXT_POSITION),
     level_text: Text::new(String::from(format!("level {:0>7}", START_TETRIS_LEVEL)), color::TEXT, LEVEL_TEXT_POSITION),
     next_text: Text::new(String::from("next"), color::TEXT, NEXT_TEXT_POSITION),
+    state_text: Text::new(String::from(""), color::TEXT, STATE_TEXT_POSITION),
   }
 }
 
-fn write_preview(preview: &mut Tilemap, piece: &Piece) {
-  preview.clear_tiles();
-  write_piece(piece, preview);
+// Rendering //
+
+fn render(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
+  state.board.render(renderer, state.game_state == GameState::Playing);
+
+  state.state_text.render(&assets.typefaces.use_store().get("typeface").expect("failed to fetch typeface"), &assets.textures, renderer);
+
+  render_preview(&state.preview, assets, &mut state.next_text, renderer);
+  render_statistics(state, assets, renderer);
 }
 
 fn render_preview(preview: &Tilemap, assets: &AssetManager, text: &mut Text, renderer: &mut Renderer) {
@@ -154,30 +164,23 @@ fn render_statistics(state: &mut Tetris, assets: &AssetManager, renderer: &mut R
   renderer.draw_rect(STATISTICS_BORDER, BORDER_COLOR);
 }
 
-fn render(state: &mut Tetris, assets: &AssetManager, renderer: &mut Renderer) {
-  state.board.render(renderer, state.game_state == GameState::Pause);
-  render_preview(&state.preview, assets, &mut state.next_text, renderer);
-  render_statistics(state, assets, renderer);
-}
-
-fn next_state(board: &mut Board, preview_board: &mut Tilemap) -> GameState {
-  let BoardState { preview, space, .. } = board.next_piece();
-  write_preview(preview_board, preview);
-  if space {
-    GameState::Playing
-  } else {
-    GameState::GameOver
-  }
-}
+// Update //
 
 fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris, renderer: &mut Renderer) {
   // check for pause
   if events.is_key_pressed(Keycode::Escape) {
-    assets.audio.play("pause", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
-    state.game_state = match state.game_state {
-      GameState::Playing => GameState::Pause,
-      GameState::Pause => GameState::Playing,
-      _ => state.game_state.clone(),
+    match state.game_state {
+      GameState::Playing => {
+        pause_sound(assets);
+        state.state_text.set_content(String::from(GAME_PAUSED_TEXT));
+        state.game_state = GameState::Pause;
+      }
+      GameState::Pause => {
+        pause_sound(assets);
+        state.state_text.clear_content();
+        state.game_state = GameState::Playing;
+      }
+      _ => {}
     };
   }
 
@@ -209,7 +212,7 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris, render
           let lines_cleared = state.lines_to_clear.len() as u32;
           if lines_cleared > 0 {
             state.lines += lines_cleared;
-            state.lines_text.set_content(format!("LINES {:0>7}", state.lines)).expect("failed to set content");
+            state.lines_text.set_content(format!("LINES {:0>7}", state.lines));
 
             if let Some(clear_line_sfx) = determine_sfx(lines_cleared) {
               assets.audio.play(clear_line_sfx, SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
@@ -244,12 +247,12 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris, render
           // calculate score
           let points = calculate_score(lines_cleared, state.level).expect("failed to calculate score");
           state.score += points;
-          state.score_text.set_content(format!("SCORE {:0>7}", state.score)).expect("failed to set content");
+          state.score_text.set_content(format!("SCORE {:0>7}", state.score));
 
           // check level advance
           if state.lines >= state.level * LINES_PER_LEVEL {
             state.level += 1;
-            state.level_text.set_content(format!("LEVEL {:0>7}", state.level)).expect("failed to set content");
+            state.level_text.set_content(format!("LEVEL {:0>7}", state.level));
 
             if state.level <= MAX_TETRIS_LEVEL {
               let new_speed = calculate_speed_ms(state.level).expect("failed to calculate speed");
@@ -278,11 +281,35 @@ fn update(events: &EventStore, assets: &AssetManager, state: &mut Tetris, render
       }
     }
     GameState::Won => {
-      panic!("Look ma, I won!");
+      state.state_text.set_content(String::from(GAME_WON_TEXT));
+    }
+    GameState::GameOver => {
+      state.state_text.set_content(String::from(GAME_OVER_TEXT));
     }
     _ => {}
   }
 }
+
+fn write_preview(preview: &mut Tilemap, piece: &Piece) {
+  preview.clear_tiles();
+  write_piece(piece, preview);
+}
+
+fn next_state(board: &mut Board, preview_board: &mut Tilemap) -> GameState {
+  let BoardState { preview, space, .. } = board.next_piece();
+  write_preview(preview_board, preview);
+  if space {
+    GameState::Playing
+  } else {
+    GameState::GameOver
+  }
+}
+
+fn pause_sound(assets: &AssetManager) {
+  assets.audio.play("pause", SFX_VOLUME, Loop::Once).expect("failed to play sound effect");
+}
+
+// Main //
 
 pub fn main() -> Result<(), String> {
   run_application(

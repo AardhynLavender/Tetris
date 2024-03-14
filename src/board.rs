@@ -69,9 +69,9 @@ impl Board {
   }
 
   /// render the board and the current piece
-  pub fn render(&self, renderer: &mut Renderer, paused: bool) {
+  pub fn render(&self, renderer: &mut Renderer, show_tiles: bool) {
     // pause is not for cheating, don't render the board while paused
-    if !paused {
+    if show_tiles {
       // draw tiles
       for tile in &self.tilemap {
         if let Some(tile) = tile {

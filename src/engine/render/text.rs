@@ -44,10 +44,14 @@ impl Text {
   }
 
   /// Sets the text content of the text and
-  pub fn set_content(&mut self, content: String) -> Result<(), String> {
+  pub fn set_content(&mut self, content: String) {
     self.content = content;
     self.dirty = true;
-    Ok(())
+  }
+  /// Clears the text content of the text
+  pub fn clear_content(&mut self) {
+    self.content.clear();
+    self.dirty = true;
   }
 
   /// Render the text to the screen, regenerating the texture if the content has changed
@@ -58,7 +62,7 @@ impl Text {
     }
 
     // check if texture is missing
-    if self.texture.is_none() {
+    if self.texture.is_none() && !self.content.is_empty() {
       self.rebuild_texture(font, texture_loader)
         .map_err(|e| eprintln!("Failed to build texture: {}", e))
         .ok();
