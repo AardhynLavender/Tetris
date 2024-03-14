@@ -2,11 +2,16 @@
 
 Tetris implementation in Rust using the SDL2 library.
 
-<iframe frameborder="0" src="https://itch.io/embed/2583492" width="552" height="167">
-    <a href="https://aardhyn.itch.io/tetris">Tetris by Aardhyn Lavender</a>
-</iframe>
+## Download
+
+Tetris is available on Itch.io at [aardhyn.itch.io/Tetris](https://aardhyn.itch.io/tetris).
+
+Or, download the latest precompiled executable for your platform
+under [Releases](https://github.com/AardhynLavender/Tetris/releases).
 
 ## Installation
+
+For building from source
 
 ### Rust
 
@@ -36,13 +41,6 @@ annotations for the `sdl2::rendering::Texture` struct.
 This removes the need to propagate lifetime annotations throughout the codebase when dealing with textures.
 As textures are dropped before their "*owning*" `TextureCreator`, there is no risk of dangling references or memory
 leaks.
-
-## Download
-
-Download the latest precompiled executable for your platform
-under [Releases](https://github.com/AardhynLavender/Tetris/releases).
-
-A deployment on **Itch.io** is in the works.
 
 ## Compilation
 
@@ -85,6 +83,8 @@ To ship the application, you can provide the `tetris.exe` and the `asset/` direc
 ## References
 
 See [CREDITS](./CREDITS.md).
+
+I do not claim to have created the Tetris game, nor any of the music or sfx used in this software.
 
 > ChatGPT 3.5 was used to aid my understanding of algorithmic concepts and design patterns while learning Rust.
 > Not for the generation of production code.
